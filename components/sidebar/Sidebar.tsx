@@ -80,7 +80,13 @@ export function Sidebar({ onClose }: SidebarProps) {
         <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
             {/* ---- Top: User info ---- */}
             <div className="flex items-center justify-between p-3">
-                <div className="flex items-center gap-2 min-w-0">
+                <div
+                    className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-sidebar-accent/50 p-1 rounded-md transition-colors"
+                    onClick={() => {
+                        router.push("/profile");
+                        onClose?.();
+                    }}
+                >
                     <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
                         {session?.user?.name?.[0]?.toUpperCase() || "?"}
                     </div>
@@ -179,7 +185,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                     variant="ghost"
                     className="w-full justify-start gap-2 text-sm h-8 text-muted-foreground"
                     onClick={() => {
-                        router.push("/dashboard");
+                        router.push("/trash");
                         onClose?.();
                     }}
                 >

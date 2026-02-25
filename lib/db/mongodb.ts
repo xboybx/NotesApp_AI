@@ -10,7 +10,11 @@ const MONGO_URI_STRING = MONGO_URI as string;
 
 
 //Global cache to prevent multiplw connections
+//Inside global.mongoose, we will store two things:
 
+//conn
+//: The successfully established, finished database connection.
+//promise: The "in-progress" attempt to connect.
 declare global {
     var mongoose: {
         conn: typeof import("mongoose") | null;
@@ -45,7 +49,6 @@ async function connectDB() {
         }).then((mongoose) => {
             return mongoose;
         })
-        console.log(cached.promise)
     }
 
     //Now it tries for connection

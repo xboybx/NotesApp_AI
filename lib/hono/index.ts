@@ -30,7 +30,7 @@ const app = new Hono().basePath("/api");
 //   GET  /api/auth/get-session    → Get current session/user
 app.all("/auth/*", (c) => {
     return auth.handler(c.req.raw);
-});
+});//Hono gives the data to bettet Auth to handle user Crund Operations and betterAuth  handles all with handler
 
 // ---------------------------------------------------------------
 // PAGES ROUTES: /api/pages/**

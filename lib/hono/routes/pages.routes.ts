@@ -207,9 +207,15 @@ pagesRoutes.patch("/:id", async (c) => {
 
         // Manually whitelist allowed fields instead of Zod.parse()
         // (avoids Zod version conflict introduced by BlockNote packages)
+
+        // 1. Grab everything the frontend sent us
         const body = await c.req.json();
+
+        // 2. SECURITY CHECK: The "Whitelist"
         const allowedFields = ["title", "icon", "coverImage", "content", "tags", "summary"];
         const validatedData: Record<string, unknown> = {};
+
+        // We carefully loop through what the user sent. 
         for (const key of allowedFields) {
             if (key in body) validatedData[key] = body[key];
         }
