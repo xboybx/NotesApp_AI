@@ -120,7 +120,22 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Override BlockNote default backgrounds to match our App theme */
+.bn-container,
+.bn-container[data-color-scheme="light"],
+.bn-container[data-color-scheme="dark"] {
+  background-color: transparent !important;
+  background: transparent !important;
+  --bn-colors-editor-background: transparent !important;
+}
+
+.bn-container .bn-editor,
+.mantine-BlockNote-root {
+  background-color: transparent !important;
 }

@@ -2,6 +2,8 @@
 
 NoteWise AI is a modern, Notion-style note-taking application boosted with advanced AI features. It offers a seamless, rich-text editing experience combined with an intelligent assistant to help you summarize, organize, and generate content effortlessly.
 
+Live demo: https://notes-app-ai-one.vercel.app/
+
 ---
 
 ## 🚀 How to Use the App

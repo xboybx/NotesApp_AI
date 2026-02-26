@@ -252,7 +252,7 @@ export default function PageEditorPage() {
     // ---- Loading state ----
     if (isLoading) {
         return (
-            <div className="max-w-4xl mx-auto p-6 md:p-12">
+            <div className="w-full px-4 sm:px-8 py-8">
                 <Skeleton className="h-10 w-3/4 mb-6" />
                 <Skeleton className="h-5 w-full mb-2" />
                 <Skeleton className="h-5 w-5/6 mb-2" />
@@ -264,7 +264,7 @@ export default function PageEditorPage() {
     // ---- Error state ----
     if (isError || !page) {
         return (
-            <div className="max-w-4xl mx-auto p-6 text-center py-20">
+            <div className="w-full px-4 sm:px-8 text-center py-20">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Page not found</h2>
                 <p className="text-muted-foreground mb-4">
@@ -282,7 +282,7 @@ export default function PageEditorPage() {
         summarize.isPending || improve.isPending || generateTags.isPending;
 
     return (
-        <div className="max-w-5xl mx-auto px-4 md:px-4 py-8">
+        <div className="w-full px-4 sm:px-8 py-8">
 
             {/* ---- Page Action Bar ---- */}
             <div className="flex items-center justify-between mb-6 gap-4">
