@@ -27,7 +27,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 // What type of AI result are we showing?
 type AIResultType = "summary" | "improve" | "tags" | null;
@@ -122,23 +121,23 @@ export function AIPanel({
                 ) : result ? (
                     <div className="space-y-3">
                         {/* Result display */}
-                        {type === "tags" && Array.isArray(result) ? (
-                            // Tags: show as badge chips
-                            <div className="flex flex-wrap gap-2">
-                                {result.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
-                        ) : (
-                            // Summary or Improve: show as scrollable text
-                            <ScrollArea className="max-h-[200px]">
+                        <div className="max-h-[300px] overflow-y-auto pr-2">
+                            {type === "tags" && Array.isArray(result) ? (
+                                // Tags: show as badge chips
+                                <div className="flex flex-wrap gap-2">
+                                    {result.map((tag, index) => (
+                                        <Badge key={index} variant="secondary" className="text-xs">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : (
+                                // Summary or Improve: show as scrollable text
                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                                     {result as string}
                                 </p>
-                            </ScrollArea>
-                        )}
+                            )}
+                        </div>
 
                         {/* Action buttons */}
                         <div className="flex items-center gap-2 pt-2 border-t">
