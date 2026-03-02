@@ -8,8 +8,10 @@
 
 "use client";
 
+import { useState } from "react";
+
 import { useRouter, usePathname } from "next/navigation";
-import { MoreHorizontal, Star, Trash2 } from "lucide-react";
+import { MoreHorizontal, Star, Trash2, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,13 +34,19 @@ export function SidebarPageItem({ page }: SidebarPageItemProps) {
     const pathname = usePathname();
     const toggleFavorite = useToggleFavorite();
     const archivePage = useArchivePage();
+    const [isNavigating, setIsNavigating] = useState(false);
 
     // Highlight the currently active page in the sidebar
     const isActive = pathname === `/pages/${page._id}`;
 
     // Navigate to the page editor when clicked
     function handleClick() {
-        router.push(`/pages/${page._id}`);
+        setIsNavigating(true);
+        // push returns a promise so we can clear the flag if navigation fails.
+        router.push(`/pages/${page._id}`).finally(() => {
+            // component will unmount on success, but clear on failure just in case
+            setIsNavigating(false);
+        });
     }
 
     // Toggle favorite (star/unstar)
@@ -77,9 +85,13 @@ export function SidebarPageItem({ page }: SidebarPageItemProps) {
         ${isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"}
       `}
         >
-            {/* Page icon (emoji) or fallback */}
+            {/* Page icon (emoji) or fallback. Show spinner while navigating. */}
             <span className="text-base shrink-0">
-                {page.icon || "📄"}
+                {isNavigating ? (
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                ) : (
+                    page.icon || "📄"
+                )}
             </span>
 
             {/* Page title — truncated if too long */}

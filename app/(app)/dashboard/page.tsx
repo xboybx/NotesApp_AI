@@ -12,8 +12,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, FileText, Clock } from "lucide-react";
+import { Plus, FileText, Clock, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +30,7 @@ export default function DashboardPage() {
     const createPage = useCreatePage();
 
     const pages = pagesData?.data || [];
+    const [navigatingId, setNavigatingId] = useState<string | null>(null);
 
     // Create a new page and open it immediately
     async function handleCreatePage() {
@@ -95,11 +97,20 @@ export default function DashboardPage() {
                             <Card
                                 key={page._id}
                                 className="cursor-pointer hover:bg-accent/50 transition-colors group"
-                                onClick={() => router.push(`/pages/${page._id}`)}
+                                onClick={() => {
+                                    setNavigatingId(page._id);
+                                    router.push(`/pages/${page._id}`).finally(() => setNavigatingId(null));
+                                }}
                             >
                                 <CardHeader>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-2xl">{page.icon || "📄"}</span>
+                                        <span className="text-2xl">
+                                            {navigatingId === page._id ? (
+                                                <Loader2Icon className="h-5 w-5 animate-spin" />
+                                            ) : (
+                                                page.icon || "📄"
+                                            )}
+                                        </span>
                                         {page.isFavorite && (
                                             <span className="text-yellow-400 text-sm">★</span>
                                         )}
