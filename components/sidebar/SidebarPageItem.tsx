@@ -40,13 +40,15 @@ export function SidebarPageItem({ page }: SidebarPageItemProps) {
     const isActive = pathname === `/pages/${page._id}`;
 
     // Navigate to the page editor when clicked
-    function handleClick() {
+    async function handleClick() {
         setIsNavigating(true);
-        // push returns a promise so we can clear the flag if navigation fails.
-        router.push(`/pages/${page._id}`).finally(() => {
+        // router.push returns void; use try/finally to reset state
+        try {
+            await router.push(`/pages/${page._id}`);
+        } finally {
             // component will unmount on success, but clear on failure just in case
             setIsNavigating(false);
-        });
+        }
     }
 
     // Toggle favorite (star/unstar)

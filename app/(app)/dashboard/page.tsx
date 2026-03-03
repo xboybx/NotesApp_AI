@@ -97,9 +97,13 @@ export default function DashboardPage() {
                             <Card
                                 key={page._id}
                                 className="cursor-pointer hover:bg-accent/50 transition-colors group"
-                                onClick={() => {
+                                onClick={async () => {
                                     setNavigatingId(page._id);
-                                    router.push(`/pages/${page._id}`).finally(() => setNavigatingId(null));
+                                    try {
+                                        await router.push(`/pages/${page._id}`);
+                                    } finally {
+                                        setNavigatingId(null);
+                                    }
                                 }}
                             >
                                 <CardHeader>
