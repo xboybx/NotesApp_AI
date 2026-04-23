@@ -282,18 +282,18 @@ export default function PageEditorPage() {
         summarize.isPending || improve.isPending || generateTags.isPending;
 
     return (
-        <div className="w-full px-4 sm:px-8 py-8">
+        <div className="w-full max-w-4xl mx-auto px-6 sm:px-12 py-12 animate-slide-up">
 
             {/* ---- Page Action Bar ---- */}
-            <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="flex items-center justify-between mb-10 gap-4">
                 {/* AI Buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={handleSummarize}
                         disabled={isAILoading}
-                        className="gap-1.5 text-xs"
+                        className="gap-2 text-xs font-medium hover:bg-purple-500/10 hover:text-purple-600 transition-all rounded-full px-4"
                     >
                         {summarize.isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -304,11 +304,11 @@ export default function PageEditorPage() {
                     </Button>
 
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={handleImprove}
                         disabled={isAILoading}
-                        className="gap-1.5 text-xs"
+                        className="gap-2 text-xs font-medium hover:bg-blue-500/10 hover:text-blue-600 transition-all rounded-full px-4"
                     >
                         {improve.isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -319,39 +319,39 @@ export default function PageEditorPage() {
                     </Button>
 
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={handleGenerateTags}
                         disabled={isAILoading}
-                        className="gap-1.5 text-xs"
+                        className="gap-2 text-xs font-medium hover:bg-green-500/10 hover:text-green-600 transition-all rounded-full px-4"
                     >
                         {generateTags.isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
                             <Tag className="h-3.5 w-3.5 text-green-500" />
                         )}
-                        Generate Tags
+                        Tags
                     </Button>
                 </div>
 
                 {/* Page Actions */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 rounded-full hover:bg-accent"
                         onClick={handleFavorite}
                         title={page!.isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
                         <Star
-                            className={`h-4 w-4 ${page!.isFavorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                            className={`h-4 w-4 transition-all ${page!.isFavorite ? "fill-yellow-400 text-yellow-400 scale-110" : "text-muted-foreground"}`}
                         />
                     </Button>
 
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                         onClick={handleArchive}
                         title="Move to trash"
                     >
@@ -362,7 +362,7 @@ export default function PageEditorPage() {
 
             {/* ---- AI Panel ---- */}
             {(aiPanel.type || isAILoading) && (
-                <div className="mb-6">
+                <div className="mb-8">
                     <AIPanel
                         type={aiPanel.type}
                         result={aiPanel.result}
@@ -373,11 +373,11 @@ export default function PageEditorPage() {
             )}
 
             {/* ---- Page Icon ---- */}
-            <div className="mb-2">
+            <div className="mb-4">
                 <Dialog>
                     <DialogTrigger asChild>
                         <button
-                            className="text-6xl cursor-pointer select-none hover:bg-accent rounded-lg p-2 transition-colors -ml-2"
+                            className="text-7xl cursor-pointer select-none hover:bg-accent/50 rounded-2xl p-3 transition-all -ml-4 hover:scale-105 active:scale-95"
                             title="Click to change icon"
                         >
                             {page!.icon || "📄"}
@@ -394,25 +394,30 @@ export default function PageEditorPage() {
             </div>
 
             {/* ---- Page Title ---- */}
-            <div className="mb-2 flex items-center gap-3">
+            <div className="mb-4 group relative">
                 <Input
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     placeholder="Untitled"
-                    className="text-3xl md:text-4xl font-bold border-none shadow-none px-0 h-auto focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/30 py-2"
+                    className="text-4xl md:text-5xl font-extrabold border-none shadow-none px-0 h-auto focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/20 py-4 tracking-tight"
                 />
-                {isSavingTitle && (
-                    <span className="text-xs text-muted-foreground whitespace-nowrap animate-pulse shrink-0">
-                        Saving...
-                    </span>
-                )}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                   {isSavingTitle && (
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-accent/50 backdrop-blur-sm rounded-md border border-border/50 animate-pulse">
+                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                Saving
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* ---- Tags ---- */}
             {page!.tags && page!.tags.length > 0 && (
-                <div className="flex gap-2 flex-wrap mb-4">
+                <div className="flex gap-2 flex-wrap mb-6">
                     {page!.tags.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
+                        <Badge key={i} variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/50 text-muted-foreground border-none">
                             {tag}
                         </Badge>
                     ))}
@@ -421,26 +426,28 @@ export default function PageEditorPage() {
 
             {/* ---- AI Summary ---- */}
             {page!.summary && (
-                <div className="mb-4 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
-                    <p className="text-xs font-semibold text-purple-500 mb-1 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3" /> AI Summary
+                <div className="mb-8 p-4 rounded-xl glass-darker">
+                    <p className="text-[10px] font-bold text-purple-500 mb-2 flex items-center gap-1.5 uppercase tracking-widest">
+                        <Sparkles className="h-3 w-3" /> AI Insight
                     </p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground/90 leading-relaxed font-medium">
                         {page.summary}
                     </p>
                 </div>
             )}
 
-            <Separator className="mb-6" />
+            <Separator className="mb-10 opacity-50" />
 
             {/* ---- BlockNote Editor ---- */}
-            <Editor
-                ref={editorRef}
-                initialContent={page!.content as unknown as Block[]}
-                onSave={handleEditorSave}
-                onChange={(blocks) => liveBlocksRef.current = blocks} // sync live ref
-                editable={true}
-            />
+            <div className="min-h-[500px] prose prose-slate dark:prose-invert max-w-none">
+                <Editor
+                    ref={editorRef}
+                    initialContent={page!.content as unknown as Block[]}
+                    onSave={handleEditorSave}
+                    onChange={(blocks) => liveBlocksRef.current = blocks} // sync live ref
+                    editable={true}
+                />
+            </div>
 
             {/* ---- Floating AI Generator ---- */}
             <FloatingAI

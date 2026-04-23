@@ -58,7 +58,7 @@ aiRoutes.post("/summarize", async (c) => {
 
         // 3. Call OpenAI with our summarize prompt
         const response = await openai.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free",
+            model: process.env.AI_MODEL_NAME!,
             messages: getSummarizePrompt(title || "Untitled", content),
             max_tokens: 200,
             temperature: 0.3,
@@ -130,7 +130,7 @@ aiRoutes.post("/improve", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free",
+            model: process.env.AI_MODEL_NAME!,
             messages: getImprovePrompt(content, selection),
             max_tokens: 2000,
             temperature: 0.4,
@@ -197,7 +197,7 @@ aiRoutes.post("/tags", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free",
+            model: process.env.AI_MODEL_NAME!,
             messages: getTagsPrompt(title || "Untitled", content),
             max_tokens: 100,
             temperature: 0.3,
@@ -286,7 +286,7 @@ aiRoutes.post("/generate", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free",
+            model: process.env.AI_MODEL_NAME!,
             messages: getGeneratePrompt(userPrompt, title, content),
             max_tokens: 1500,
             temperature: 0.7,

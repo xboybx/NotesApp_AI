@@ -14,6 +14,7 @@ import { Hono } from "hono";
 import { auth } from "@/lib/auth/auth";
 import pagesRoutes from "@/lib/hono/routes/pages.routes";
 import aiRoutes from "@/lib/hono/routes/ai.routes";
+import uploadRoutes from "@/lib/hono/routes/upload.routes";
 
 // Create the Hono app with /api base path.
 // Every route registered here gets /api prepended automatically.
@@ -46,6 +47,7 @@ app.route("/pages", pagesRoutes);
 // POST /api/ai/improve   → Improve grammar and clarity
 // POST /api/ai/tags      → Auto-generate tags
 app.route("/ai", aiRoutes);
+app.route("/upload", uploadRoutes);
 
 // ---------------------------------------------------------------
 // HEALTH CHECK: GET /api/health

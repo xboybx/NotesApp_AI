@@ -63,6 +63,21 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({
             initialContent && initialContent.length > 0
                 ? initialContent
                 : undefined,
+        uploadFile: async (file: File) => {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/upload/image", {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                return result.data.url;
+            }
+            throw new Error("Upload failed");
+        }
     });
 
     // Expose methods to parent

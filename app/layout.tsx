@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   title: "AI Notes — Notion-Style Note Taking with AI",
   description:
     "A modern AI-powered note-taking app with a Notion-style block editor. Create, organize, and enhance your notes with AI summaries, writing improvements, and auto-tagging.",
+  icons: {
+    icon: [
+      { url: "/logoAll.png" },
+      { url: "/logoAll.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/logoAll.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({

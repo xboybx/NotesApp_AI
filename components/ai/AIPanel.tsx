@@ -91,7 +91,7 @@ export function AIPanel({
     }
 
     return (
-        <Card className="border-primary/20 bg-card/95 backdrop-blur-sm shadow-lg">
+        <Card className="glass shadow-2xl border-primary/20 animate-slide-up overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">

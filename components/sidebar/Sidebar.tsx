@@ -25,6 +25,7 @@ import {
     LogOut,
     ChevronsLeft,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -77,131 +78,138 @@ export function Sidebar({ onClose }: SidebarProps) {
     }
 
     return (
-        <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+        <div className="flex flex-col h-full bg-sidebar/50 backdrop-blur-xl text-sidebar-foreground border-r border-sidebar-border">
             {/* ---- Top: User info ---- */}
-            <div className="flex items-center justify-between p-3">
+            <div className="flex items-center justify-between p-4">
                 <div
-                    className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-sidebar-accent/50 p-1 rounded-md transition-colors"
+                    className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer hover:bg-sidebar-accent/80 p-2 rounded-lg transition-all duration-200 group"
                     onClick={() => {
                         router.push("/profile");
                         onClose?.();
                     }}
                 >
-                    <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                    <div className="h-8 w-8 rounded-lg bg-primary shadow-sm flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0 group-hover:scale-105 transition-transform">
                         {session?.user?.name?.[0]?.toUpperCase() || "?"}
                     </div>
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-sm font-semibold truncate">
                         {session?.user?.name || "User"}
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 ml-2">
                     <ThemeToggle />
                     {/* Close button — only shown on mobile */}
                     {onClose && (
-                        <Button variant="ghost" size="icon" onClick={onClose}>
+                        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
                             <ChevronsLeft className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
             </div>
 
-            <Separator />
+            <Separator className="opacity-50 mx-4 w-auto" />
 
             {/* ---- Action buttons ---- */}
-            <div className="px-3 py-2 space-y-1">
+            <div className="px-4 py-4 space-y-1.5">
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-sm h-8"
+                    className="w-full justify-start gap-3 text-sm h-9 rounded-lg hover:bg-sidebar-accent transition-all hover:translate-x-1"
                     onClick={() => {
                         router.push("/dashboard");
                         onClose?.();
                     }}
                 >
-                    <Home className="h-4 w-4" />
-                    Home
+                    <Home className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Home</span>
                 </Button>
 
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-sm h-8"
+                    className="w-full justify-start gap-3 text-sm h-9 rounded-lg hover:bg-sidebar-accent transition-all hover:translate-x-1"
                     onClick={handleCreatePage}
                     disabled={createPage.isPending}
                 >
-                    <Plus className="h-4 w-4" />
-                    New Page
+                    <Plus className="h-4 w-4 text-primary" />
+                    <span className="font-medium">New Page</span>
                 </Button>
             </div>
 
-            <Separator />
+            <Separator className="opacity-50 mx-4 w-auto" />
 
             {/* ---- Scrollable pages list ---- */}
-            <ScrollArea className="flex-1 px-2">
+            <ScrollArea className="flex-1 px-3">
                 {isLoading ? (
                     // Skeleton loaders while pages are loading
-                    <div className="space-y-2 p-2">
+                    <div className="space-y-3 p-3">
                         {Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-7 w-full rounded-md" />
+                            <Skeleton key={i} className="h-8 w-full rounded-lg" />
                         ))}
                     </div>
                 ) : (
-                    <div className="py-2">
+                    <div className="py-4 space-y-6">
                         {/* FAVORITES section */}
                         {favoritePages.length > 0 && (
-                            <div className="mb-3">
-                                <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <div className="animate-slide-up">
+                                <p className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">
                                     Favorites
                                 </p>
-                                {favoritePages.map((page) => (
-                                    <SidebarPageItem key={page._id} page={page} />
-                                ))}
+                                <div className="space-y-0.5">
+                                    {favoritePages.map((page) => (
+                                        <SidebarPageItem key={page._id} page={page} />
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {/* ALL PAGES section */}
-                        <div>
-                            <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                            <p className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">
                                 Pages
                             </p>
                             {regularPages.length > 0 ? (
-                                regularPages.map((page) => (
-                                    <SidebarPageItem key={page._id} page={page} />
-                                ))
+                                <div className="space-y-0.5">
+                                    {regularPages.map((page) => (
+                                        <SidebarPageItem key={page._id} page={page} />
+                                    ))}
+                                </div>
                             ) : (
-                                <p className="px-3 py-4 text-xs text-muted-foreground text-center">
-                                    No pages yet. Create one!
-                                </p>
+                                <div className="px-3 py-8 text-center bg-accent/20 rounded-xl border border-dashed border-border/50 mx-2">
+                                    <p className="text-xs text-muted-foreground font-medium">
+                                        No pages yet
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </div>
                 )}
             </ScrollArea>
 
-            <Separator />
+            <Separator className="opacity-50 mx-4 w-auto" />
 
             {/* ---- Bottom: Trash + Logout ---- */}
-            <div className="px-3 py-2 space-y-1">
+            <div className="p-4 space-y-1.5">
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-sm h-8 text-muted-foreground"
+                    className="w-full justify-start gap-3 text-sm h-9 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                     onClick={() => {
                         router.push("/trash");
                         onClose?.();
                     }}
                 >
                     <Trash2 className="h-4 w-4" />
-                    Trash
+                    <span className="font-medium">Trash</span>
                 </Button>
 
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-sm h-8 text-muted-foreground"
+                    className="w-full justify-start gap-3 text-sm h-9 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                     onClick={handleLogout}
                 >
                     <LogOut className="h-4 w-4" />
-                    Log out
+                    <span className="font-medium">Log out</span>
                 </Button>
             </div>
         </div>
+
     );
 }

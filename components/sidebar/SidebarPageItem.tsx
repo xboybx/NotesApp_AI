@@ -81,10 +81,10 @@ export function SidebarPageItem({ page }: SidebarPageItemProps) {
         <div
             onClick={handleClick}
             className={`
-        group flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer
-        text-sm transition-colors
-        hover:bg-accent/50
-        ${isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"}
+        group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer
+        text-sm transition-all duration-200 ease-in-out
+        hover:bg-accent/80 hover:translate-x-1
+        ${isActive ? "bg-accent/100 text-accent-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/5" : "text-muted-foreground hover:text-foreground"}
       `}
         >
             {/* Page icon (emoji) or fallback. Show spinner while navigating. */}

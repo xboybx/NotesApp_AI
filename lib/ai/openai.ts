@@ -17,8 +17,8 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY!,
+    baseURL: process.env.AI_BASE_URL,
+    apiKey: process.env.AI_API_KEY!,
     defaultHeaders: {
         // Used for rankings on openrouter.ai (optional but good practice)
         "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",

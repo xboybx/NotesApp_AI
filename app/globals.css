@@ -122,8 +122,39 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* Smooth scroll for the whole app */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Modern Glassmorphism Utility */
+@layer utilities {
+  .glass {
+    @apply bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/20 dark:border-white/10;
+  }
+  
+  .glass-darker {
+    @apply bg-white/40 dark:bg-black/40 backdrop-blur-lg border border-white/10 dark:border-white/5;
+  }
+}
+
+/* Smooth Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
 }
 
 /* Override BlockNote default backgrounds to match our App theme */
@@ -138,4 +169,14 @@
 .bn-container .bn-editor,
 .mantine-BlockNote-root {
   background-color: transparent !important;
+}
+
+/* Custom entry animations */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
 }
