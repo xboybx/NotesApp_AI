@@ -82,20 +82,15 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({
 
     // Expose methods to parent
     useImperativeHandle(ref, () => ({
-        insertContent: (content: string) => {
+        insertContent: async (content: string) => {
             if (!editor) return;
 
-            // Split content by newlines to create multiple paragraph blocks
-            const paragraphs = content.split("\n\n").filter(p => p.trim());
-
-            const blocksToInsert = paragraphs.map(p => ({
-                type: "paragraph",
-                content: p
-            }));
+            // Parse markdown string into BlockNote blocks
+            const blocks = await editor.tryParseMarkdownToBlocks(content);
 
             // Insert after the current cursor position
             editor.insertBlocks(
-                blocksToInsert as any,
+                blocks,
                 editor.getTextCursorPosition().block,
                 "after"
             );

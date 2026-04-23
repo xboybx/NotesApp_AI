@@ -23,6 +23,10 @@ import {
     ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,10 +136,36 @@ export function AIPanel({
                                     ))}
                                 </div>
                             ) : (
-                                // Summary or Improve: show as scrollable text
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                    {result as string}
-                                </p>
+                                // Summary or Improve: show as scrollable markdown
+                                <div className="prose prose-sm dark:prose-invert max-w-none 
+                                    prose-headings:font-bold prose-headings:tracking-tight 
+                                    prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            code({ node, inline, className, children, ...props }: any) {
+                                                const match = /language-(\w+)/.exec(className || "");
+                                                return !inline && match ? (
+                                                    <SyntaxHighlighter
+                                                        style={vscDarkPlus}
+                                                        language={match[1]}
+                                                        PreTag="div"
+                                                        className="rounded-lg shadow-sm border border-border/50"
+                                                        {...props}
+                                                    >
+                                                        {String(children).replace(/\n$/, "")}
+                                                    </SyntaxHighlighter>
+                                                ) : (
+                                                    <code className="bg-muted px-1.5 py-0.5 rounded text-primary font-mono text-[0.85em]" {...props}>
+                                                        {children}
+                                                    </code>
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {result as string}
+                                    </ReactMarkdown>
+                                </div>
                             )}
                         </div>
 
