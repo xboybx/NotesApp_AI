@@ -171,6 +171,55 @@
   background-color: transparent !important;
 }
 
+/* --- BlockNote Premium Typography & Smooth Styles --- */
+.bn-block-content {
+  line-height: 1.8 !important;
+  /* Nice space between lines */
+  transition: background-color 0.2s ease;
+}
+
+.bn-editor h1,
+.bn-block-content[data-content-type="heading"][data-level="1"] {
+  margin-top: 1.5em !important;
+  margin-bottom: 0.5em !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  font-size: 2.25rem !important;
+}
+
+.bn-editor h2,
+.bn-block-content[data-content-type="heading"][data-level="2"] {
+  margin-top: 1.2em !important;
+  margin-bottom: 0.5em !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  font-size: 1.875rem !important;
+}
+
+.bn-editor h3,
+.bn-block-content[data-content-type="heading"][data-level="3"] {
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+  font-weight: 600 !important;
+  font-size: 1.5rem !important;
+}
+
+/* Smooth Image Auto-detect styling */
+.bn-editor img {
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out !important;
+  margin-top: 1em !important;
+  margin-bottom: 1em !important;
+}
+
+.bn-editor img:hover {
+  transform: scale(1.01) !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+/* ---------------------------------------------------- */
+
 /* Custom entry animations */
 @keyframes slideUp {
   from {

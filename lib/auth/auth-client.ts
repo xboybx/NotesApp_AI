@@ -33,4 +33,4 @@ export const authClient = createAuthClient({
 // useSession → React hook to get the current logged-in user
 //              Usage: const { data: session } = useSession()
 //              Returns: { user: { id, name, email, ... } } or null
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut, useSession, } = authClient;

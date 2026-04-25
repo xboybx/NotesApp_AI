@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
-import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import EmojiPicker, { Theme as EmojiTheme, EmojiStyle } from "emoji-picker-react";
 import { useTheme } from "next-themes";
 
 import { usePage, useUpdatePage, useToggleFavorite, useArchivePage } from "@/hooks/usePages";
@@ -388,6 +388,7 @@ export default function PageEditorPage() {
                         <EmojiPicker
                             onEmojiClick={handleIconSelect}
                             theme={resolvedTheme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT}
+                            emojiStyle={EmojiStyle.TWITTER}
                         />
                     </DialogContent>
                 </Dialog>
