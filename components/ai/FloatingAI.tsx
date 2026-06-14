@@ -52,6 +52,7 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
         if (!prompt.trim() || generateContent.isPending) return;
 
         try {
+            console.log(`[FloatingAI] Sending prompt to AI: "${prompt}"`);
             const res = await generateContent.mutateAsync({
                 pageId,
                 title,
@@ -59,13 +60,26 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
                 prompt: prompt.trim()
             });
 
+            console.log(`[FloatingAI] Full API response received:`, res);
+
             if (res.success && res.data?.result) {
-                onGenerated(res.data.result as string);
+                const resultText = res.data.result as string;
+                console.log(`[FloatingAI] Received result length: ${resultText.length} characters`);
+                console.log(`[FloatingAI] Full AI response that will be pasted:\n`, resultText);
+
+                // Log what gets passed to onGenerated to catch if it's truncated during paste
+                console.log(`[FloatingAI] Passing result to onGenerated...`);
+                onGenerated(resultText);
+
                 setPrompt("");
                 setIsOpen(false);
-                toast.success("Content generated!");
+                toast.success(`Content generated! (${resultText.length} chars)`);
+            } else {
+                console.error("[FloatingAI] API returned success but no result:", res);
+                toast.error("AI returned incomplete content");
             }
         } catch (err: unknown) {
+            console.error("[FloatingAI] Generation error:", err);
             const msg = err instanceof Error ? err.message : "Failed to generate content";
             toast.error(msg);
         }
@@ -82,70 +96,70 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
                     shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)]
                     backdrop-blur-[40px] bg-transparent
                 ">
-                        {/* Subtle top shine only */}
-                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+                    {/* Subtle top shine only */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
 
-                        <div className="relative z-10 p-5">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                                        <Sparkles className="h-3.5 w-3.5 text-white" />
-                                    </div>
-                                    <span className="text-sm font-semibold text-foreground/90 tracking-tight">Ask AI to write...</span>
+                    <div className="relative z-10 p-5">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                                    <Sparkles className="h-3.5 w-3.5 text-white" />
                                 </div>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="h-7 w-7 rounded-full flex items-center justify-center
+                                <span className="text-sm font-semibold text-foreground/90 tracking-tight">Ask AI to write...</span>
+                            </div>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="h-7 w-7 rounded-full flex items-center justify-center
                                         bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20
                                         text-muted-foreground hover:text-foreground transition-all"
-                                >
-                                    <X className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
 
-                            {/* Input */}
-                            <form onSubmit={handleGenerate} className="relative">
-                                <Input
-                                    ref={inputRef}
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="e.g. Write an overview of machine learning..."
-                                    className="pr-14 h-12
+                        {/* Input */}
+                        <form onSubmit={handleGenerate} className="relative">
+                            <Input
+                                ref={inputRef}
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="e.g. Write an overview of machine learning..."
+                                className="pr-14 h-12
                                         bg-transparent
                                         border-white/20 dark:border-white/10
                                         focus-visible:ring-1 focus-visible:ring-white/30
                                         placeholder:text-muted-foreground/40
                                         rounded-2xl text-sm font-medium
                                         transition-all duration-200"
-                                    disabled={generateContent.isPending}
-                                />
-                                <div className="absolute right-1.5 top-1.5 bottom-1.5">
-                                    <button
-                                        type="submit"
-                                        disabled={!prompt.trim() || generateContent.isPending}
-                                        className="h-full aspect-square rounded-xl
+                                disabled={generateContent.isPending}
+                            />
+                            <div className="absolute right-1.5 top-1.5 bottom-1.5">
+                                <button
+                                    type="submit"
+                                    disabled={!prompt.trim() || generateContent.isPending}
+                                    className="h-full aspect-square rounded-xl
                                             bg-gradient-to-br from-purple-500 to-blue-500
                                             disabled:opacity-40 disabled:cursor-not-allowed
                                             hover:shadow-lg hover:shadow-purple-500/30
                                             hover:scale-105 active:scale-95
                                             transition-all duration-200
                                             flex items-center justify-center"
-                                    >
-                                        {generateContent.isPending ? (
-                                            <Loader2 className="h-4 w-4 text-white animate-spin" />
-                                        ) : (
-                                            <Send className="h-4 w-4 text-white" />
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
+                                >
+                                    {generateContent.isPending ? (
+                                        <Loader2 className="h-4 w-4 text-white animate-spin" />
+                                    ) : (
+                                        <Send className="h-4 w-4 text-white" />
+                                    )}
+                                </button>
+                            </div>
+                        </form>
 
-                            {/* Footer */}
-                            <p className="mt-3 text-[10px] text-muted-foreground/50 text-center font-medium tracking-wide">
-                                AI content may be inaccurate — review before finalizing
-                            </p>
-                        </div>
+                        {/* Footer */}
+                        <p className="mt-3 text-[10px] text-muted-foreground/50 text-center font-medium tracking-wide">
+                            AI content may be inaccurate — review before finalizing
+                        </p>
+                    </div>
                 </div>
             )}
 

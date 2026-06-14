@@ -17,6 +17,8 @@ Live demo: https://notes-app-ai-one.vercel.app/
 - **Slash Commands**: Type `/` inside the editor to open the block menu. You can insert headings, bullet lists, code blocks, images, and more.
 - **Drag & Drop**: Hover over any block to reveal a handle. Drag it to reorder your content easily.
 - **Auto-Save**: Everything you type is automatically saved to the database every 1.5 seconds of inactivity.
+- **Keyboard Shortcuts**: Basic styling shortcuts (bold, italic, underline) are available. The "Create link" shortcut is temporarily disabled.
+- **Keyboard Shortcuts**: Basic styling shortcuts (bold, italic, underline) are available. The "Create link" shortcut is temporarily disabled.
 
 ### 3. Unleashing the AI
 - **Top Toolbar**:

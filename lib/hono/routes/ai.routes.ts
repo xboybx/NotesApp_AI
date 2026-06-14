@@ -132,12 +132,16 @@ aiRoutes.post("/improve", async (c) => {
         const response = await openai.chat.completions.create({
             model: process.env.AI_MODEL_NAME!,
             messages: getImprovePrompt(content, selection),
-            max_tokens: 2000,
+            max_tokens: 4096, // Increased from 2000 to handle longer improvements
             temperature: 0.4,
         });
 
         console.log("[AI Improve] finish_reason:", response.choices[0]?.finish_reason);
-        console.log("[AI Improve] content:", response.choices[0]?.message?.content?.slice(0, 100));
+        console.log("[AI Improve] usage:", response.usage);
+        const fullContent = response.choices[0]?.message?.content?.trim() || "";
+        console.log("[AI Improve] Full improved content length:", fullContent.length);
+        console.log("[AI Improve] Full improved content:\n", fullContent);
+        console.log("[AI Improve] Raw response:", JSON.stringify(response, null, 2));
 
         const improved = response.choices[0]?.message?.content?.trim() || "";
 
@@ -285,17 +289,31 @@ aiRoutes.post("/generate", async (c) => {
             return c.json({ success: false, error: "Prompt is required" }, 400);
         }
 
+        console.log(`[AI Generate] Received prompt: "${userPrompt.substring(0, 150)}..."`);
+        console.log(`[AI Generate] Current note content length: ${content.length} chars`);
+
         const response = await openai.chat.completions.create({
             model: process.env.AI_MODEL_NAME!,
             messages: getGeneratePrompt(userPrompt, title, content),
-            max_tokens: 1500,
+            max_tokens: 4096, // Increased from 1500 to 4096 to handle longer responses
             temperature: 0.7,
         });
 
+        // Log full AI response details - critical for debugging truncation
+        console.log(`[AI Generate] finish_reason:`, response.choices[0]?.finish_reason);
+        console.log(`[AI Generate] usage:`, response.usage);
         const generated = response.choices[0]?.message?.content?.trim() || "";
+        console.log(`[AI Generate] Full generated content length: ${generated.length} chars`);
+        console.log(`[AI Generate] Full generated content:\n`, generated); // Logs EVERYTHING the AI sends
+        console.log(`[AI Generate] Raw response object:`, JSON.stringify(response, null, 2));
 
         if (!generated) {
+            console.error("[AI Generate] AI returned an empty response!");
             return c.json({ success: false, error: "AI returned an empty response" }, 500);
+        }
+
+        if (response.choices[0]?.finish_reason !== "stop") {
+            console.warn(`[AI Generate] WARNING: Response was not fully completed! finish_reason: ${response.choices[0]?.finish_reason}`);
         }
 
         return c.json({ success: true, data: { result: generated } });

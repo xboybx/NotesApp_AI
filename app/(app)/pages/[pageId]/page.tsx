@@ -192,7 +192,16 @@ export default function PageEditorPage() {
 
     // ---- AI: Generate Content (via floating button) ----
     const handleAIGenerated = (newContent: string) => {
-        editorRef.current?.insertContent(newContent);
+        console.log(`[Page.handleAIGenerated] Received content to insert: length=${newContent.length} chars`);
+        console.log(`[Page.handleAIGenerated] Full content that will be inserted into BlockNote:\n`, newContent);
+
+        try {
+            editorRef.current?.insertContent(newContent);
+            console.log(`[Page.handleAIGenerated] insertContent() called successfully!`);
+        } catch (insertError) {
+            console.error("[Page.handleAIGenerated] Error inserting content into editor:", insertError);
+            toast.error("Failed to insert AI content into editor");
+        }
     };
 
     // ---- AI: Generate Tags ----
@@ -403,7 +412,7 @@ export default function PageEditorPage() {
                     className="text-4xl md:text-5xl font-extrabold border-none shadow-none px-0 h-auto focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/20 py-4 tracking-tight"
                 />
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                   {isSavingTitle && (
+                    {isSavingTitle && (
                         <div className="flex items-center gap-1.5 px-2 py-1 bg-accent/50 backdrop-blur-sm rounded-md border border-border/50 animate-pulse">
                             <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
