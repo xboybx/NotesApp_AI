@@ -14,7 +14,7 @@
 import { useRouter } from "next/navigation";
 import { Plus, FileText, Clock, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,6 +31,11 @@ export default function DashboardPage() {
 
     const pages = pagesData?.data || [];
     const [navigatingId, setNavigatingId] = useState<string | null>(null);
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
 
     // Create a new page and open it immediately
     async function handleCreatePage() {
@@ -58,7 +63,7 @@ export default function DashboardPage() {
             {/* ---- Welcome Header ---- */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold mb-2">
-                    Welcome back, {session?.user?.name?.split(" ")[0] || "there"} 👋
+                    Welcome back, {isHydrated ? (session?.user?.name?.split(" ")[0] || "there") : "there"} 👋
                 </h1>
                 <p className="text-muted-foreground">
                     Your AI-powered workspace. Create, organize, and enhance your notes.

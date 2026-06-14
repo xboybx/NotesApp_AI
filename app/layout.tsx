@@ -19,11 +19,11 @@ export const metadata: Metadata = {
     "A modern AI-powered note-taking app with a Notion-style block editor. Create, organize, and enhance your notes with AI summaries, writing improvements, and auto-tagging.",
   icons: {
     icon: [
-      { url: "/logoAll.png" },
-      { url: "/logoAll.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
     ],
     apple: [
-      { url: "/logoAll.png", sizes: "180x180", type: "image/png" },
+      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
     ],
   },
 };
