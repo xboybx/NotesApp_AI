@@ -18,6 +18,7 @@ export function getSummarizePrompt(title: string, content: string) {
             role: "system" as const,
             content: `You are a concise note summarizer. Your job is to read a note and produce a clear, 
 informative summary in 2-3 sentences. Focus on the key points and main ideas. 
+Make sure not to miss the main details and highlight the importance of the topic or text.
 Do NOT use markdown formatting. Just return plain text.`,
         },
         {
@@ -81,11 +82,13 @@ IMPORTANT RULES:
 // ---- Generate Content ----
 // Generates new content from scratch or based on a prompt.
 export function getGeneratePrompt(userPrompt: string, title?: string, existingContent?: string) {
-    let systemContent = `You are a creative and helpful writing assistant inside a note-taking app. 
+    let systemContent = `You are a creative and helpful writing assistant inside a note-taking app like Notion (which uses the BlockNote block-based editor). 
 Your job is to generate high-quality text based on the user's request. 
 Keep the following in mind:
 - Be helpful and provide valuable, well-structured information
 - Use clear, professional yet conversational language
+- Format the response in clean, suitable Markdown formats. For example, if the response needs a table, provide a proper Markdown table. If it needs lists, bullet points, or headings, format them clearly.
+- If the response contains any mathematical, scientific, or financial formulas/metrics, wrap them in standard LaTeX block math syntax using double dollar signs on separate lines (e.g. $$\nImpressions = \\frac{Clicks}{CTR}\n$$) so that our LaTeX/KaTeX processor can parse, format, and render them beautifully inside the editor. Do NOT write formulas as raw inline text.
 - If provided, use the note title and existing content to match the current style/context
 - Do NOT add introductory or concluding remarks like "Here is the content you requested"
 - Just return the generated text content directly.`;
