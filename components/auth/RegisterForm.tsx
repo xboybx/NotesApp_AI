@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import {
     registerSchema,
@@ -42,6 +42,8 @@ import {
 export function RegisterForm() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const {
         register,
@@ -97,7 +99,7 @@ export function RegisterForm() {
             </CardHeader>
 
             <form onSubmit={handleSubmit(onSubmit)}>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pb-6">
                     {/* Name */}
                     <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
@@ -131,13 +133,28 @@ export function RegisterForm() {
                     {/* Password */}
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••"
-                            disabled={isLoading}
-                            {...register("password")}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••"
+                                disabled={isLoading}
+                                className="pr-10"
+                                {...register("password")}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p className="text-sm text-destructive">
                                 {errors.password.message}
@@ -148,13 +165,34 @@ export function RegisterForm() {
                     {/* Confirm Password */}
                     <div className="space-y-2">
                         <Label htmlFor="confirmPassword">Confirm Password</Label>
-                        <Input
-                            id="confirmPassword"
-                            type="password"
-                            placeholder="••••••"
-                            disabled={isLoading}
-                            {...register("confirmPassword")}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="confirmPassword"
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="••••••"
+                                disabled={isLoading}
+                                className="pr-10"
+                                {...register("confirmPassword")}
+                            />
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setShowConfirmPassword((visible) => !visible)
+                                }
+                                className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                aria-label={
+                                    showConfirmPassword
+                                        ? "Hide confirm password"
+                                        : "Show confirm password"
+                                }
+                            >
+                                {showConfirmPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
+                            </button>
+                        </div>
                         {errors.confirmPassword && (
                             <p className="text-sm text-destructive">
                                 {errors.confirmPassword.message}

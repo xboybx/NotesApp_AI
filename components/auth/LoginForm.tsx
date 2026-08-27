@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 // Our Zod schema defines what a valid login looks like
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
@@ -43,6 +43,7 @@ import {
 export function LoginForm() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // React Hook Form setup:
     // - register: connects an <input> to the form (tracks its value)
@@ -97,7 +98,7 @@ export function LoginForm() {
 
             {/* handleSubmit(onSubmit) → validates with Zod FIRST, then calls onSubmit */}
             <form onSubmit={handleSubmit(onSubmit)}>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pb-6">
                     {/* Email */}
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
@@ -117,13 +118,28 @@ export function LoginForm() {
                     {/* Password */}
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••"
-                            disabled={isLoading}
-                            {...register("password")}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••"
+                                disabled={isLoading}
+                                className="pr-10"
+                                {...register("password")}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p className="text-sm text-destructive">
                                 {errors.password.message}

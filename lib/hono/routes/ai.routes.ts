@@ -13,7 +13,7 @@
 
 import { Hono } from "hono";
 import { authMiddleware } from "@/lib/hono/middlewares/auth.middleware";
-import openai from "@/lib/ai/openai";
+import openai, { aiModel } from "@/lib/ai/openai";
 import {
     getSummarizePrompt,
     getImprovePrompt,
@@ -58,7 +58,7 @@ aiRoutes.post("/summarize", async (c) => {
 
         // 3. Call OpenAI with our summarize prompt
         const response = await openai.chat.completions.create({
-            model: process.env.AI_MODEL_NAME!,
+            model: aiModel,
             messages: getSummarizePrompt(title || "Untitled", content),
             max_tokens: 200,
             temperature: 0.3,
@@ -130,7 +130,7 @@ aiRoutes.post("/improve", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: process.env.AI_MODEL_NAME!,
+            model: aiModel,
             messages: getImprovePrompt(content, selection),
             max_tokens: 4096, // Increased from 2000 to handle longer improvements
             temperature: 0.4,
@@ -201,7 +201,7 @@ aiRoutes.post("/tags", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: process.env.AI_MODEL_NAME!,
+            model: aiModel,
             messages: getTagsPrompt(title || "Untitled", content),
             max_tokens: 100,
             temperature: 0.3,
@@ -293,7 +293,7 @@ aiRoutes.post("/generate", async (c) => {
         console.log(`[AI Generate] Current note content length: ${content.length} chars`);
 
         const response = await openai.chat.completions.create({
-            model: process.env.AI_MODEL_NAME!,
+            model: aiModel,
             messages: getGeneratePrompt(userPrompt, title, content),
             max_tokens: 4096, // Increased from 1500 to 4096 to handle longer responses
             temperature: 0.7,

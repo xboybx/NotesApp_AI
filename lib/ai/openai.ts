@@ -1,27 +1,24 @@
 // ============================================================
 // lib/ai/openai.ts
-// OpenRouter client — drop-in replacement for the OpenAI SDK.
+// Groq client — uses Groq's OpenAI-compatible API.
 //
-// OpenRouter gives access to 300+ models (GPT-4o, Claude, Gemini,
-// Mistral, Llama, etc.) via one OpenAI-compatible API.
-//
-// Just change the model string in ai.routes.ts to switch models.
-// Example models:
-//   "openai/gpt-4o-mini"          ← fast + cheap
-//   "openai/gpt-4o"               ← most capable OpenAI
-//   "anthropic/claude-3.5-sonnet" ← best for writing
-//   "google/gemini-flash-1.5"     ← fast Google model
-//   "meta-llama/llama-3-8b"       ← free open-source
 // ============================================================
 
 import OpenAI from "openai";
 
+const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
+const apiKey = process.env.AI_API_KEY;
+
+if (!apiKey) {
+    throw new Error("AI_API_KEY is not configured");
+}
+
+export const aiModel = process.env.AI_MODEL_NAME || "groq/compound";
+
 const openai = new OpenAI({
-    baseURL: process.env.AI_BASE_URL,
-    apiKey: process.env.AI_API_KEY!,
+    baseURL,
+    apiKey,
     defaultHeaders: {
-        // Used for rankings on openrouter.ai (optional but good practice)
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
         "X-Title": "AI Notes App",
     },
 });
