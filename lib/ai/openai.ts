@@ -9,7 +9,7 @@ import OpenAI from "openai";
 const baseURL = process.env.AI_BASE_URL || "https://api.groq.com/openai/v1";
 const apiKey = process.env.AI_API_KEY;
 export const fastAiModel =
-    process.env.AI_FAST_MODEL_NAME;
+    process.env.AI_FAST_MODEL_NAME || process.env.AI_MODEL_NAME || "groq/compound";
 if (!apiKey) {
     throw new Error("AI_API_KEY is not configured");
 }
