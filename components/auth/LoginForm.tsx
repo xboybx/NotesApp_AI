@@ -161,6 +161,15 @@ export function LoginForm() {
                     </Button>
 
                     <p className="text-sm text-muted-foreground text-center">
+                        <Link
+                            href="/forgot-password"
+                            className="text-primary underline-offset-4 hover:underline"
+                        >
+                            Forgot password?
+                        </Link>
+                    </p>
+
+                    <p className="text-sm text-muted-foreground text-center">
                         Don&apos;t have an account?{" "}
                         <Link
                             href="/register"

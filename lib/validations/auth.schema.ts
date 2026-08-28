@@ -49,8 +49,24 @@ export const registerSchema = z
         path: ["confirmPassword"], // this tells the form WHICH field to show the error on
     });
 
+export const forgotPasswordSchema = z.object({
+    email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+});
+
+export const resetPasswordSchema = z
+    .object({
+        password: z.string().min(6, "Password must be at least 6 characters").max(128, "Password is too long"),
+        confirmPassword: z.string().min(1, "Please confirm your password"),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+    });
+
 // ---- TypeScript Types (auto-generated from the schemas above) ----
 // z.infer<> extracts the TypeScript type from a Zod schema.
 // So we don't have to write the types manually — Zod does it for us!
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

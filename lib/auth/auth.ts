@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
+import { sendPasswordResetEmail } from "@/lib/email/resend";
 
 //For connecting BetterAuth with MongoDB
 const client = new MongoClient(process.env.MONGODB_URI!);
@@ -10,6 +11,14 @@ export const auth = betterAuth({
     database: mongodbAdapter(db),
     emailAndPassword: {
         enabled: true,
+        sendResetPassword: async ({ user, url }) => {
+            await sendPasswordResetEmail({
+                email: user.email,
+                name: user.name,
+                url,
+            });
+        },
+        resetPasswordTokenExpiresIn: 60 * 60,
     },
     session: {
         expiresIn: 60 * 60 * 24 * 7,

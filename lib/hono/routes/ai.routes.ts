@@ -13,7 +13,7 @@
 
 import { Hono } from "hono";
 import { authMiddleware } from "@/lib/hono/middlewares/auth.middleware";
-import openai, { aiModel } from "@/lib/ai/openai";
+import openai, { aiModel, fastAiModel } from "@/lib/ai/openai";
 import {
     getSummarizePrompt,
     getImprovePrompt,
@@ -22,6 +22,7 @@ import {
 } from "@/lib/ai/prompts";
 import connectDB from "@/lib/db/mongodb";
 import Page from "@/lib/db/page.model";
+
 
 const aiRoutes = new Hono();
 
@@ -58,15 +59,15 @@ aiRoutes.post("/summarize", async (c) => {
 
         // 3. Call OpenAI with our summarize prompt
         const response = await openai.chat.completions.create({
-            model: aiModel,
+            model: fastAiModel,
             messages: getSummarizePrompt(title || "Untitled", content),
             max_tokens: 200,
             temperature: 0.3,
         });
 
         // Log full response for debugging
-        console.log("[AI Summarize] finish_reason:", response.choices[0]?.finish_reason);
-        console.log("[AI Summarize] content:", response.choices[0]?.message?.content);
+        // console.log("[AI Summarize] finish_reason:", response.choices[0]?.finish_reason);
+        // console.log("[AI Summarize] content:", response.choices[0]?.message?.content);
 
         // 4. Extract the AI's response text
         const summary = response.choices[0]?.message?.content?.trim() || "";
@@ -130,18 +131,18 @@ aiRoutes.post("/improve", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: aiModel,
+            model: fastAiModel,
             messages: getImprovePrompt(content, selection),
             max_tokens: 4096, // Increased from 2000 to handle longer improvements
             temperature: 0.4,
         });
 
-        console.log("[AI Improve] finish_reason:", response.choices[0]?.finish_reason);
-        console.log("[AI Improve] usage:", response.usage);
+        // console.log("[AI Improve] finish_reason:", response.choices[0]?.finish_reason);
+        // console.log("[AI Improve] usage:", response.usage);
         const fullContent = response.choices[0]?.message?.content?.trim() || "";
-        console.log("[AI Improve] Full improved content length:", fullContent.length);
-        console.log("[AI Improve] Full improved content:\n", fullContent);
-        console.log("[AI Improve] Raw response:", JSON.stringify(response, null, 2));
+        // console.log("[AI Improve] Full improved content length:", fullContent.length);
+        // console.log("[AI Improve] Full improved content:\n", fullContent);
+        // console.log("[AI Improve] Raw response:", JSON.stringify(response, null, 2));
 
         const improved = response.choices[0]?.message?.content?.trim() || "";
 
@@ -201,19 +202,19 @@ aiRoutes.post("/tags", async (c) => {
         }
 
         const response = await openai.chat.completions.create({
-            model: aiModel,
+            model: fastAiModel,
             messages: getTagsPrompt(title || "Untitled", content),
             max_tokens: 100,
             temperature: 0.3,
         });
 
-        console.log("[AI Tags] finish_reason:", response.choices[0]?.finish_reason);
-        console.log("[AI Tags] full message:", JSON.stringify(response.choices[0]?.message));
+        // console.log("[AI Tags] finish_reason:", response.choices[0]?.finish_reason);
+        // console.log("[AI Tags] full message:", JSON.stringify(response.choices[0]?.message));
 
         const rawResponse = response.choices[0]?.message?.content?.trim() || "";
 
         // Log so we can see exactly what the model returned
-        console.log("[AI Tags] Raw model response:", JSON.stringify(rawResponse));
+        // console.log("[AI Tags] Raw model response:", JSON.stringify(rawResponse));
 
         if (!rawResponse) {
             return c.json({ success: false, error: "AI returned empty response" }, 500);
@@ -244,7 +245,7 @@ aiRoutes.post("/tags", async (c) => {
                 .slice(0, 5);
         }
 
-        console.log("[AI Tags] Parsed tags:", tags);
+        // console.log("[AI Tags] Parsed tags:", tags);
 
         if (tags.length === 0) {
             return c.json({ success: false, error: "AI could not generate tags" }, 500);
@@ -289,8 +290,8 @@ aiRoutes.post("/generate", async (c) => {
             return c.json({ success: false, error: "Prompt is required" }, 400);
         }
 
-        console.log(`[AI Generate] Received prompt: "${userPrompt.substring(0, 150)}..."`);
-        console.log(`[AI Generate] Current note content length: ${content.length} chars`);
+        // console.log(`[AI Generate] Received prompt: "${userPrompt.substring(0, 150)}..."`);
+        // console.log(`[AI Generate] Current note content length: ${content.length} chars`);
 
         const response = await openai.chat.completions.create({
             model: aiModel,
@@ -300,12 +301,12 @@ aiRoutes.post("/generate", async (c) => {
         });
 
         // Log full AI response details - critical for debugging truncation
-        console.log(`[AI Generate] finish_reason:`, response.choices[0]?.finish_reason);
-        console.log(`[AI Generate] usage:`, response.usage);
+        // console.log(`[AI Generate] finish_reason:`, response.choices[0]?.finish_reason);
+        // console.log(`[AI Generate] usage:`, response.usage);
         const generated = response.choices[0]?.message?.content?.trim() || "";
-        console.log(`[AI Generate] Full generated content length: ${generated.length} chars`);
-        console.log(`[AI Generate] Full generated content:\n`, generated); // Logs EVERYTHING the AI sends
-        console.log(`[AI Generate] Raw response object:`, JSON.stringify(response, null, 2));
+        // console.log(`[AI Generate] Full generated content length: ${generated.length} chars`);
+        // console.log(`[AI Generate] Full generated content:\n`, generated); // Logs EVERYTHING the AI sends
+        // console.log(`[AI Generate] Raw response object:`, JSON.stringify(response, null, 2));
 
         if (!generated) {
             console.error("[AI Generate] AI returned an empty response!");
