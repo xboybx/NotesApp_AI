@@ -452,6 +452,7 @@ export default function PageEditorPage() {
             <div className="min-h-[500px] prose prose-slate dark:prose-invert max-w-none">
                 <Editor
                     ref={editorRef}
+                    pageId={pageId}
                     initialContent={page!.content as unknown as Block[]}
                     onSave={handleEditorSave}
                     onChange={(blocks) => liveBlocksRef.current = blocks} // sync live ref

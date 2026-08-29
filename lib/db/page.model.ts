@@ -61,11 +61,15 @@ const pageSchema = new Schema<IPage>({
         default: false,
         index: true,
     },
-
-
 }, {
     timestamps: true,
-})
+});
+
+// Compound indexes for high-performance lookups:
+// 1. Fast O(1) single-page queries and updates
+pageSchema.index({ userId: 1, _id: 1 });
+// 2. Fast covered queries for user's active/archived pages sorted by last updated
+pageSchema.index({ userId: 1, isArchived: 1, updatedAt: -1 });
 
 
 const Page: Model<IPage> = mongoose.models.Page || mongoose.model<IPage>("Page", pageSchema);

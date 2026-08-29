@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 
 import { useRouter, usePathname } from "next/navigation";
 import { MoreHorizontal, Star, Trash2, Loader2Icon } from "lucide-react";
@@ -29,7 +29,7 @@ interface SidebarPageItemProps {
     page: PageListItem;
 }
 
-export function SidebarPageItem({ page }: SidebarPageItemProps) {
+export const SidebarPageItem = memo(function SidebarPageItem({ page }: SidebarPageItemProps) {
     const router = useRouter();
     const pathname = usePathname();
     const toggleFavorite = useToggleFavorite();
@@ -136,4 +136,4 @@ export function SidebarPageItem({ page }: SidebarPageItemProps) {
             </div>
         </div>
     );
-}
+});

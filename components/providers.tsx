@@ -32,10 +32,11 @@ export function Providers({ children }: ProvidersProps) {
             new QueryClient({
                 defaultOptions: {
                     queries: {
-                        // "staleTime" means: after fetching data, consider it "fresh"
-                        // for this many milliseconds. During this time, re-renders
-                        // won't re-fetch from the server — they use the cache.
-                        staleTime: 60 * 1000, // 1 minute
+                        // "staleTime" of 5 minutes keeps client cache warm and fresh while
+                        // optimistic updates keep state 100% accurate in real-time.
+                        staleTime: 5 * 60 * 1000, // 5 minutes
+                        gcTime: 15 * 60 * 1000,    // 15 minutes garbage collection time
+                        refetchOnWindowFocus: false, // Prevents background fetch storms on tab switch
                         retry: 1, // if a request fails, retry it once before showing error
                     },
                 },

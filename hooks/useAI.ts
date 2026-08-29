@@ -14,7 +14,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AIResponse, ApiResponse } from "@/types";
+import type { AIResponse, ApiResponse, PageType } from "@/types";
 
 // Helper: make POST requests to AI endpoints
 async function callAI(
@@ -45,7 +45,6 @@ async function callAI(
 // ---------------------------------------------------------------
 // useSummarize() — Generate AI summary
 // ---------------------------------------------------------------
-// After success, invalidates the page query to show the cached summary
 export function useSummarize() {
     const queryClient = useQueryClient();
 
@@ -56,12 +55,23 @@ export function useSummarize() {
             title?: string;
         }) => callAI("summarize", data),
 
-        // After summarize succeeds, the summary is saved to the DB.
-        // We invalidate the page query so the UI shows the new summary.
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: ["page", variables.pageId],
-            });
+        onSuccess: (res, variables) => {
+            if (res.data?.result && typeof res.data.result === "string") {
+                const summaryText = res.data.result;
+                queryClient.setQueryData<ApiResponse<PageType>>(
+                    ["page", variables.pageId],
+                    (old) => {
+                        if (!old?.data) return old;
+                        return {
+                            ...old,
+                            data: {
+                                ...old.data,
+                                summary: summaryText,
+                            },
+                        };
+                    }
+                );
+            }
         },
     });
 }
@@ -83,7 +93,6 @@ export function useImprove() {
 // ---------------------------------------------------------------
 // useGenerateTags() — Auto-generate tags
 // ---------------------------------------------------------------
-// After success, invalidates the page query to show the new tags
 export function useGenerateTags() {
     const queryClient = useQueryClient();
 
@@ -94,12 +103,23 @@ export function useGenerateTags() {
             title?: string;
         }) => callAI("tags", data),
 
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: ["page", variables.pageId],
-            });
-            // Also refresh sidebar (tags might affect display later)
-            queryClient.invalidateQueries({ queryKey: ["pages"] });
+        onSuccess: (res, variables) => {
+            if (res.data?.result && Array.isArray(res.data.result)) {
+                const tagList = res.data.result;
+                queryClient.setQueryData<ApiResponse<PageType>>(
+                    ["page", variables.pageId],
+                    (old) => {
+                        if (!old?.data) return old;
+                        return {
+                            ...old,
+                            data: {
+                                ...old.data,
+                                tags: tagList,
+                            },
+                        };
+                    }
+                );
+            }
         },
     });
 }

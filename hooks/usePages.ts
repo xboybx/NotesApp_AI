@@ -54,11 +54,7 @@ async function fetchApi<T>(
 // data.data = PageListItem[] (title, icon, favorite, date — no content)
 export function usePages() {
     return useQuery({
-        // queryKey: a unique identifier for this cached data.
-        // React Query uses this to know WHAT data to cache/invalidate.
         queryKey: ["pages"],
-
-        // queryFn: the function that actually fetches the data.
         queryFn: () => fetchApi<PageListItem[]>("/api/pages"),
     });
 }
@@ -69,16 +65,15 @@ export function usePages() {
 // Used by the editor page to load the full BlockNote content.
 export function usePage(pageId: string) {
     return useQuery({
-        queryKey: ["page", pageId], // unique per page ID
+        queryKey: ["page", pageId],
         queryFn: () => fetchApi<PageType>(`/api/pages/${pageId}`),
-        enabled: !!pageId, // don't fetch if pageId is empty/undefined
+        enabled: !!pageId,
     });
 }
 
 // ---------------------------------------------------------------
 // useCreatePage() — Create a new blank page
 // ---------------------------------------------------------------
-// Returns a mutation function: createPage.mutateAsync({ title, icon })
 export function useCreatePage() {
     const queryClient = useQueryClient();
 
@@ -89,10 +84,28 @@ export function useCreatePage() {
                 body: JSON.stringify(data),
             }),
 
-        // After creating a page, tell React Query to re-fetch the pages list.
-        // This updates the sidebar automatically without a manual refresh.
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["pages"] });
+        onSuccess: (res) => {
+            const pageData = res.data;
+            if (pageData) {
+                // Optimistically insert new page into sidebar list cache
+                queryClient.setQueryData<ApiResponse<PageListItem[]>>(
+                    ["pages"],
+                    (old) => {
+                        if (!old?.data) return old;
+                        const newItem: PageListItem = {
+                            _id: pageData._id,
+                            title: pageData.title,
+                            icon: pageData.icon,
+                            isFavorite: pageData.isFavorite,
+                            isArchived: pageData.isArchived,
+                            updatedAt: pageData.updatedAt || new Date().toISOString(),
+                        };
+                        return { ...old, data: [newItem, ...old.data] };
+                    }
+                );
+                // Pre-populate page detail cache
+                queryClient.setQueryData(["page", pageData._id], res);
+            }
         },
     });
 }
@@ -116,12 +129,53 @@ export function useUpdatePage() {
                 body: JSON.stringify(data),
             }),
 
-        onSuccess: (_, variables) => {
-            // Invalidate BOTH: the pages list (sidebar) AND the specific page
-            queryClient.invalidateQueries({ queryKey: ["pages"] });
-            queryClient.invalidateQueries({
-                queryKey: ["page", variables.pageId],
-            });
+        onMutate: async ({ pageId, data }) => {
+            const nowIso = new Date().toISOString();
+
+            // Optimistically update sidebar metadata if title or icon changed
+            if (data.title !== undefined || data.icon !== undefined) {
+                queryClient.setQueryData<ApiResponse<PageListItem[]>>(
+                    ["pages"],
+                    (old) => {
+                        if (!old?.data) return old;
+                        return {
+                            ...old,
+                            data: old.data.map((p) =>
+                                p._id === pageId
+                                    ? {
+                                          ...p,
+                                          ...(data.title !== undefined ? { title: data.title } : {}),
+                                          ...(data.icon !== undefined ? { icon: data.icon } : {}),
+                                          updatedAt: nowIso,
+                                      }
+                                    : p
+                            ),
+                        };
+                    }
+                );
+            }
+
+            // Optimistically update page detail cache
+            queryClient.setQueryData<ApiResponse<PageType>>(
+                ["page", pageId],
+                (old) => {
+                    if (!old?.data) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            ...data,
+                            updatedAt: nowIso,
+                        },
+                    };
+                }
+            );
+        },
+
+        onSuccess: (res, variables) => {
+            if (res.data) {
+                queryClient.setQueryData(["page", variables.pageId], res);
+            }
         },
     });
 }
@@ -134,11 +188,43 @@ export function useToggleFavorite() {
 
     return useMutation({
         mutationFn: (pageId: string) =>
-            fetchApi(`/api/pages/${pageId}/favorite`, { method: "PATCH" }),
+            fetchApi<{ isFavorite: boolean }>(`/api/pages/${pageId}/favorite`, {
+                method: "PATCH",
+            }),
 
-        onSuccess: (_, pageId) => {
-            queryClient.invalidateQueries({ queryKey: ["pages"] });
-            queryClient.invalidateQueries({ queryKey: ["page", pageId] });
+        onMutate: async (pageId) => {
+            // Cancel outgoing queries
+            await queryClient.cancelQueries({ queryKey: ["pages"] });
+            await queryClient.cancelQueries({ queryKey: ["page", pageId] });
+
+            // Optimistically flip favorite in sidebar
+            queryClient.setQueryData<ApiResponse<PageListItem[]>>(
+                ["pages"],
+                (old) => {
+                    if (!old?.data) return old;
+                    return {
+                        ...old,
+                        data: old.data.map((p) =>
+                            p._id === pageId ? { ...p, isFavorite: !p.isFavorite } : p
+                        ),
+                    };
+                }
+            );
+
+            // Optimistically flip favorite in active page cache
+            queryClient.setQueryData<ApiResponse<PageType>>(
+                ["page", pageId],
+                (old) => {
+                    if (!old?.data) return old;
+                    return {
+                        ...old,
+                        data: {
+                            ...old.data,
+                            isFavorite: !old.data.isFavorite,
+                        },
+                    };
+                }
+            );
         },
     });
 }
@@ -151,11 +237,26 @@ export function useArchivePage() {
 
     return useMutation({
         mutationFn: (pageId: string) =>
-            fetchApi(`/api/pages/${pageId}/archive`, { method: "PATCH" }),
+            fetchApi<{ isArchived: boolean }>(`/api/pages/${pageId}/archive`, {
+                method: "PATCH",
+            }),
 
-        onSuccess: (_, pageId) => {
-            queryClient.invalidateQueries({ queryKey: ["pages"] });
-            queryClient.invalidateQueries({ queryKey: ["page", pageId] });
+        onMutate: async (pageId) => {
+            // Optimistically remove from active pages list
+            queryClient.setQueryData<ApiResponse<PageListItem[]>>(
+                ["pages"],
+                (old) => {
+                    if (!old?.data) return old;
+                    return {
+                        ...old,
+                        data: old.data.filter((p) => p._id !== pageId),
+                    };
+                }
+            );
+        },
+
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["pages", "trash"] });
         },
     });
 }
@@ -171,6 +272,7 @@ export function useDeletePage() {
             fetchApi(`/api/pages/${pageId}`, { method: "DELETE" }),
 
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["pages", "trash"] });
             queryClient.invalidateQueries({ queryKey: ["pages"] });
         },
     });
