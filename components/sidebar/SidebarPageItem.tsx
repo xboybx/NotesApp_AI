@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useToggleFavorite, useArchivePage } from "@/hooks/usePages";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PageListItem } from "@/types";
 
 interface SidebarPageItemProps {
@@ -32,6 +33,7 @@ interface SidebarPageItemProps {
 export const SidebarPageItem = memo(function SidebarPageItem({ page }: SidebarPageItemProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const queryClient = useQueryClient();
     const toggleFavorite = useToggleFavorite();
     const archivePage = useArchivePage();
     const [isNavigating, setIsNavigating] = useState(false);
@@ -39,14 +41,28 @@ export const SidebarPageItem = memo(function SidebarPageItem({ page }: SidebarPa
     // Highlight the currently active page in the sidebar
     const isActive = pathname === `/pages/${page._id}`;
 
+    // Prefetch page route, API data, and Editor component on hover/focus
+    function handlePrefetch() {
+        router.prefetch(`/pages/${page._id}`);
+        queryClient.prefetchQuery({
+            queryKey: ["page", page._id],
+            queryFn: async () => {
+                const res = await fetch(`/api/pages/${page._id}`);
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            },
+            staleTime: 5 * 60 * 1000,
+        });
+        // Pre-warm the heavy Editor JS bundle so click transition has 0ms import delay
+        import("@/components/editor/Editor");
+    }
+
     // Navigate to the page editor when clicked
     async function handleClick() {
         setIsNavigating(true);
-        // router.push returns void; use try/finally to reset state
         try {
             await router.push(`/pages/${page._id}`);
         } finally {
-            // component will unmount on success, but clear on failure just in case
             setIsNavigating(false);
         }
     }
@@ -80,6 +96,8 @@ export const SidebarPageItem = memo(function SidebarPageItem({ page }: SidebarPa
     return (
         <div
             onClick={handleClick}
+            onMouseEnter={handlePrefetch}
+            onFocus={handlePrefetch}
             className={`
         group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer
         text-sm transition-all duration-200 ease-in-out

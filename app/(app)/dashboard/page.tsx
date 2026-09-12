@@ -22,9 +22,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { useSession } from "@/lib/auth/auth-client";
 import { usePages, useCreatePage } from "@/hooks/usePages";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function DashboardPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { data: session } = useSession();
     const { data: pagesData, isLoading } = usePages();
     const createPage = useCreatePage();
@@ -32,6 +34,20 @@ export default function DashboardPage() {
     const pages = pagesData?.data || [];
     const [navigatingId, setNavigatingId] = useState<string | null>(null);
     const [isHydrated, setIsHydrated] = useState(false);
+
+    function handlePrefetchPage(id: string) {
+        router.prefetch(`/pages/${id}`);
+        queryClient.prefetchQuery({
+            queryKey: ["page", id],
+            queryFn: async () => {
+                const res = await fetch(`/api/pages/${id}`);
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            },
+            staleTime: 5 * 60 * 1000,
+        });
+        import("@/components/editor/Editor");
+    }
 
     useEffect(() => {
         setIsHydrated(true);
@@ -102,6 +118,8 @@ export default function DashboardPage() {
                             <Card
                                 key={page._id}
                                 className="cursor-pointer hover:bg-accent/50 transition-colors group"
+                                onMouseEnter={() => handlePrefetchPage(page._id)}
+                                onFocus={() => handlePrefetchPage(page._id)}
                                 onClick={async () => {
                                     setNavigatingId(page._id);
                                     try {

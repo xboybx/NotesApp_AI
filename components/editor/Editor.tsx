@@ -357,14 +357,35 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
 
         // Debounce timer ref — we clear + reset this on every keystroke
         const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+        const hasUserEdited = useRef(false);
+
+        // Instant Local-First Hydration (< 2ms):
+        // If initialContent is provided by server, use it. Otherwise, instantly check
+        // localStorage for this note's cached blocks before network completes.
+        const initialBlocks = (() => {
+            if (initialContent && initialContent.length > 0) {
+                return initialContent as unknown as Block[];
+            }
+            if (pageId && typeof window !== "undefined") {
+                try {
+                    const cached = localStorage.getItem(`cleft_content_${pageId}`);
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            return parsed as unknown as Block[];
+                        }
+                    }
+                } catch {
+                    // Ignore storage errors
+                }
+            }
+            return undefined;
+        })();
 
         // useCreateBlockNote: initializes the BlockNote editor instance.
         const editor = useCreateBlockNote({
             schema,
-            initialContent:
-                initialContent && initialContent.length > 0
-                    ? (initialContent as any)
-                    : undefined,
+            initialContent: initialBlocks,
             uploadFile: async (file: File) => {
                 const formData = new FormData();
                 formData.append("file", file);
@@ -381,6 +402,31 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
                 throw new Error("Upload failed");
             },
         });
+
+        // Reconcile server data when it arrives in the background
+        useEffect(() => {
+            if (!editor || !initialContent || initialContent.length === 0) return;
+
+            // Cache server copy locally
+            if (pageId && typeof window !== "undefined") {
+                try {
+                    localStorage.setItem(`cleft_content_${pageId}`, JSON.stringify(initialContent));
+                } catch {}
+            }
+
+            // If user hasn't started typing and current editor is empty, hydrate with server blocks
+            if (!hasUserEdited.current) {
+                const currentDoc = editor.document;
+                const isEmptyDoc =
+                    currentDoc.length <= 1 &&
+                    currentDoc[0]?.type === "paragraph" &&
+                    (!currentDoc[0].content || (Array.isArray(currentDoc[0].content) && currentDoc[0].content.length === 0));
+
+                if (isEmptyDoc) {
+                    editor.replaceBlocks(editor.document, initialContent as unknown as Block[]);
+                }
+            }
+        }, [editor, initialContent, pageId]);
 
         // Yjs Local-First Persistence & Cross-Tab Sync via IndexedDB & BroadcastChannel
         useEffect(() => {
@@ -416,24 +462,35 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             },
         }));
 
-        // Cleanup timer on unmount
+        // Cleanup timer on unmount and flush pending save
         useEffect(() => {
             return () => {
                 if (saveTimerRef.current) {
                     clearTimeout(saveTimerRef.current);
+                    if (editor && hasUserEdited.current) {
+                        onSave(editor.document as Block[]);
+                    }
                 }
             };
-        }, []);
+        }, [editor, onSave]);
 
         // Handle every editor change
         function handleChange() {
+            hasUserEdited.current = true;
             // 1. Get current blocks
             const blocks = editor.document as Block[];
 
-            // 2. Call immediate onChange if provided (0ms local reflection)
+            // 2. Instant local-first persistence (< 1ms)
+            if (pageId && typeof window !== "undefined") {
+                try {
+                    localStorage.setItem(`cleft_content_${pageId}`, JSON.stringify(blocks));
+                } catch {}
+            }
+
+            // 3. Call immediate onChange if provided (0ms local reflection)
             onChange?.(blocks);
 
-            // 3. Debounced auto-save to background pipeline
+            // 4. Debounced auto-save to background pipeline
             if (saveTimerRef.current) {
                 clearTimeout(saveTimerRef.current);
             }

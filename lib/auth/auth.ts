@@ -3,8 +3,18 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 import { sendPasswordResetEmail } from "@/lib/email/resend";
 
-//For connecting BetterAuth with MongoDB
-const client = new MongoClient(process.env.MONGODB_URI!);
+declare global {
+    var _mongoClient: MongoClient | undefined;
+}
+
+// For connecting BetterAuth with MongoDB using connection pooling and singleton cache
+if (!global._mongoClient) {
+    global._mongoClient = new MongoClient(process.env.MONGODB_URI!, {
+        maxPoolSize: 10,
+        minPoolSize: 2,
+    });
+}
+const client = global._mongoClient;
 const db = client.db("notes_app_ai");
 
 export const auth = betterAuth({

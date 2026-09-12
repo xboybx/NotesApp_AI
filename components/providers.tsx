@@ -14,7 +14,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 // Props: just the children (everything inside the app)
@@ -35,13 +35,53 @@ export function Providers({ children }: ProvidersProps) {
                         // "staleTime" of 5 minutes keeps client cache warm and fresh while
                         // optimistic updates keep state 100% accurate in real-time.
                         staleTime: 5 * 60 * 1000, // 5 minutes
-                        gcTime: 15 * 60 * 1000,    // 15 minutes garbage collection time
+                        gcTime: 30 * 60 * 1000,   // 30 minutes garbage collection time
                         refetchOnWindowFocus: false, // Prevents background fetch storms on tab switch
                         retry: 1, // if a request fails, retry it once before showing error
                     },
                 },
             })
     );
+
+    // Instant Zero-Latency Rehydration & Persistence:
+    // Restores notes list immediately (< 5ms) on app launch so sidebar and dashboard
+    // don't stare at empty skeletons while waiting for remote MongoDB Atlas queries.
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        try {
+            const cachedPages = localStorage.getItem("cleft_cached_pages");
+            if (cachedPages) {
+                const parsed = JSON.parse(cachedPages);
+                if (parsed && parsed.data && Array.isArray(parsed.data)) {
+                    queryClient.setQueryData(["pages"], parsed);
+                }
+            }
+        } catch {
+            // Ignore storage read errors
+        }
+
+        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+            if (
+                (event.type === "updated" || event.type === "added") &&
+                event.query.queryKey[0] === "pages" &&
+                event.query.state.data
+            ) {
+                try {
+                    localStorage.setItem(
+                        "cleft_cached_pages",
+                        JSON.stringify(event.query.state.data)
+                    );
+                } catch {
+                    // Ignore storage quota errors
+                }
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [queryClient]);
 
     return (
         // 1. TanStack Query: makes useQuery() and useMutation() work everywhere

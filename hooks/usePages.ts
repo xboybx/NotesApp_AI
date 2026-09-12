@@ -64,10 +64,38 @@ export function usePages() {
 // ---------------------------------------------------------------
 // Used by the editor page to load the full BlockNote content.
 export function usePage(pageId: string) {
+    const queryClient = useQueryClient();
+
     return useQuery({
         queryKey: ["page", pageId],
         queryFn: () => fetchApi<PageType>(`/api/pages/${pageId}`),
         enabled: !!pageId,
+        placeholderData: (): ApiResponse<PageType> | undefined => {
+            if (!pageId) return undefined;
+            const pagesRes = queryClient.getQueryData<ApiResponse<PageListItem[]>>(["pages"]);
+            const item = pagesRes?.data?.find((p) => p._id === pageId);
+            if (item) {
+                return {
+                    success: true,
+                    data: {
+                        _id: item._id,
+                        userId: "",
+                        title: item.title,
+                        icon: item.icon,
+                        content: [],
+                        tags: [],
+                        isFavorite: item.isFavorite,
+                        isArchived: item.isArchived,
+                        createdAt:
+                            "createdAt" in item && typeof (item as { createdAt?: string }).createdAt === "string"
+                                ? (item as { createdAt: string }).createdAt
+                                : new Date().toISOString(),
+                        updatedAt: item.updatedAt,
+                    },
+                };
+            }
+            return undefined;
+        },
     });
 }
 

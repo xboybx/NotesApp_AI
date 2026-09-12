@@ -46,9 +46,12 @@ async function connectDB() {
     if (!cached.promise) {
         cached.promise = mongoose.connect(MONGO_URI_STRING, {
             bufferCommands: false,
+            maxPoolSize: 10,
+            minPoolSize: 2,
+            serverSelectionTimeoutMS: 5000,
         }).then((mongoose) => {
             return mongoose;
-        })
+        });
     }
 
     //Now it tries for connection

@@ -39,7 +39,7 @@ import EmojiPicker, { Theme as EmojiTheme, EmojiStyle } from "emoji-picker-react
 import { useTheme } from "next-themes";
 
 import { usePage, useUpdatePage, useToggleFavorite, useArchivePage } from "@/hooks/usePages";
-import { useSummarize, useImprove, useGenerateTags, useAIContent } from "@/hooks/useAI";
+import { useSummarize, useImprove, useGenerateTags } from "@/hooks/useAI";
 import { AIPanel } from "@/components/ai/AIPanel";
 import { FloatingAI } from "@/components/ai/FloatingAI";
 import { extractTextFromBlocks } from "@/lib/utils/blocknote-to-text";
@@ -97,15 +97,24 @@ export default function PageEditorPage() {
     const liveBlocksRef = useRef<Block[]>([]); // Track hot editor content for AI
 
 
+    // Pre-warm the Editor dynamic chunk immediately on mount
+    useEffect(() => {
+        import("@/components/editor/Editor");
+    }, []);
+
     const page = pageData?.data;
 
-    // Populate local title state when page data first loads
+    // Populate local title state when page data loads or pageId switches
+    const previousPageId = useRef(pageId);
     useEffect(() => {
-        if (page && !initialLoadDone.current) {
-            setTitle(page.title || "");
-            initialLoadDone.current = true;
+        if (page?.title !== undefined) {
+            if (previousPageId.current !== pageId || !initialLoadDone.current) {
+                setTitle(page.title || "");
+                previousPageId.current = pageId;
+                initialLoadDone.current = true;
+            }
         }
-    }, [page]);
+    }, [pageId, page?.title]);
 
     // ---- Auto-save title (debounced 1.5s) ----
     const handleTitleChange = useCallback(
@@ -258,26 +267,29 @@ export default function PageEditorPage() {
 
     const { resolvedTheme } = useTheme();
 
-    // ---- Loading state ----
-    if (isLoading) {
-        return (
-            <div className="w-full px-4 sm:px-8 py-8">
-                <Skeleton className="h-10 w-3/4 mb-6" />
-                <Skeleton className="h-5 w-full mb-2" />
-                <Skeleton className="h-5 w-5/6 mb-2" />
-                <Skeleton className="h-5 w-4/6" />
-            </div>
-        );
-    }
+    // ---- If page data is not ready yet ----
+    if (!page) {
+        if (isLoading) {
+            return (
+                <div className="w-full px-4 sm:px-8 py-8">
+                    <Skeleton className="h-10 w-3/4 mb-6" />
+                    <Skeleton className="h-5 w-full mb-2" />
+                    <Skeleton className="h-5 w-5/6 mb-2" />
+                    <Skeleton className="h-5 w-4/6" />
+                </div>
+            );
+        }
 
-    // ---- Error state ----
-    if (isError || !page) {
         return (
             <div className="w-full px-4 sm:px-8 text-center py-20">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Page not found</h2>
+                <h2 className="text-xl font-semibold mb-2">
+                    {isError ? "Failed to load page" : "Page not found"}
+                </h2>
                 <p className="text-muted-foreground mb-4">
-                    This page may have been deleted or you don&apos;t have access.
+                    {isError
+                        ? "An error occurred while communicating with the server. Please check your network connection."
+                        : "This page may have been deleted or you don't have access."}
                 </p>
                 <Button onClick={() => router.push("/dashboard")}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -426,7 +438,7 @@ export default function PageEditorPage() {
             {/* ---- Tags ---- */}
             {page!.tags && page!.tags.length > 0 && (
                 <div className="flex gap-2 flex-wrap mb-6">
-                    {page!.tags.map((tag, i) => (
+                    {page!.tags.map((tag: string, i: number) => (
                         <Badge key={i} variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/50 text-muted-foreground border-none">
                             {tag}
                         </Badge>
@@ -451,11 +463,12 @@ export default function PageEditorPage() {
             {/* ---- BlockNote Editor ---- */}
             <div className="min-h-[500px] prose prose-slate dark:prose-invert max-w-none">
                 <Editor
+                    key={pageId}
                     ref={editorRef}
                     pageId={pageId}
-                    initialContent={page!.content as unknown as Block[]}
+                    initialContent={page?.content as unknown as Block[]}
                     onSave={handleEditorSave}
-                    onChange={(blocks) => liveBlocksRef.current = blocks} // sync live ref
+                    onChange={(blocks) => { liveBlocksRef.current = blocks; }} // sync live ref
                     editable={true}
                 />
             </div>
