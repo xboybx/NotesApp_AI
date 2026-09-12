@@ -70,7 +70,8 @@ export function usePage(pageId: string) {
         queryKey: ["page", pageId],
         queryFn: () => fetchApi<PageType>(`/api/pages/${pageId}`),
         enabled: !!pageId,
-        placeholderData: (): ApiResponse<PageType> | undefined => {
+        placeholderData: (previousData): ApiResponse<PageType> | undefined => {
+            if (previousData) return previousData;
             if (!pageId) return undefined;
             const pagesRes = queryClient.getQueryData<ApiResponse<PageListItem[]>>(["pages"]);
             const item = pagesRes?.data?.find((p) => p._id === pageId);
@@ -89,7 +90,7 @@ export function usePage(pageId: string) {
                         createdAt:
                             "createdAt" in item && typeof (item as { createdAt?: string }).createdAt === "string"
                                 ? (item as { createdAt: string }).createdAt
-                                : new Date().toISOString(),
+                                : "",
                         updatedAt: item.updatedAt,
                     },
                 };

@@ -10,15 +10,19 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);         // mobile sheet
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop toggle
+
+    const handleCloseSidebar = useCallback(() => {
+        setSidebarOpen(false);
+    }, []);
 
     return (
         <div className="h-screen flex overflow-hidden">
@@ -37,8 +41,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* ---- Mobile Sidebar (Sheet drawer) ---- */}
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetContent side="left" className="p-0 w-[260px]">
-                    <Sidebar onClose={() => setSidebarOpen(false)} />
+                <SheetContent side="left" className="p-0 w-[260px]" aria-describedby={undefined}>
+                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                    <SheetDescription className="sr-only">Mobile navigation sidebar</SheetDescription>
+                    <Sidebar onClose={handleCloseSidebar} />
                 </SheetContent>
             </Sheet>
 

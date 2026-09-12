@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import EmojiPicker, { Theme as EmojiTheme, EmojiStyle } from "emoji-picker-react";
 import { useTheme } from "next-themes";
 
@@ -90,6 +90,7 @@ export default function PageEditorPage() {
     const [title, setTitle] = useState("");
     const [aiPanel, setAIPanel] = useState<AIPanelState>({ type: null, result: null });
     const [isSavingTitle, setIsSavingTitle] = useState(false);
+    const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
     // Track initial load so we don't reset title on every re-render
     const initialLoadDone = useRef(false);
@@ -254,6 +255,7 @@ export default function PageEditorPage() {
 
     // ---- Change Icon ----
     async function handleIconSelect(emojiData: { emoji: string }) {
+        setIconPickerOpen(false);
         try {
             await updatePage.mutateAsync({
                 pageId,
@@ -395,7 +397,7 @@ export default function PageEditorPage() {
 
             {/* ---- Page Icon ---- */}
             <div className="mb-4">
-                <Dialog>
+                <Dialog open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
                     <DialogTrigger asChild>
                         <button
                             className="text-7xl cursor-pointer select-none hover:bg-accent/50 rounded-2xl p-3 transition-all -ml-4 hover:scale-105 active:scale-95"
@@ -404,8 +406,9 @@ export default function PageEditorPage() {
                             {page!.icon || "📄"}
                         </button>
                     </DialogTrigger>
-                    <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-fit">
+                    <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-fit" aria-describedby={undefined}>
                         <DialogTitle className="sr-only">Choose an emoji</DialogTitle>
+                        <DialogDescription className="sr-only">Select an emoji icon for this note</DialogDescription>
                         <EmojiPicker
                             onEmojiClick={handleIconSelect}
                             theme={resolvedTheme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT}
