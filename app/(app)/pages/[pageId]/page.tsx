@@ -27,6 +27,7 @@ import {
     Wand2,
     ArrowLeft,
     Loader2,
+    ChevronDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -87,10 +88,16 @@ export default function PageEditorPage() {
     const generateTags = useGenerateTags();
 
     // ---- Local state ----
+    const [isMounted, setIsMounted] = useState(false);
     const [title, setTitle] = useState("");
     const [aiPanel, setAIPanel] = useState<AIPanelState>({ type: null, result: null });
     const [isSavingTitle, setIsSavingTitle] = useState(false);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
+    const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Track initial load so we don't reset title on every re-render
     const initialLoadDone = useRef(false);
@@ -136,11 +143,14 @@ export default function PageEditorPage() {
         [pageId, updatePage]
     );
 
+    const updatePageRef = useRef(updatePage);
+    updatePageRef.current = updatePage;
+
     // ---- Auto-save editor content (called by Editor component) ----
     const handleEditorSave = useCallback(
         async (blocks: Block[]) => {
             try {
-                await updatePage.mutateAsync({
+                await updatePageRef.current.mutateAsync({
                     pageId,
                     data: { content: blocks as unknown as Record<string, unknown>[] },
                 });
@@ -148,8 +158,12 @@ export default function PageEditorPage() {
                 toast.error("Failed to auto-save content");
             }
         },
-        [pageId, updatePage]
+        [pageId]
     );
+
+    const handleEditorChange = useCallback((blocks: Block[]) => {
+        liveBlocksRef.current = blocks;
+    }, []);
 
     // ---- Get plain text from CURRENT live editor content for AI ----
     // This ensures AI summarizes what you're currently typing,
@@ -269,9 +283,9 @@ export default function PageEditorPage() {
 
     const { resolvedTheme } = useTheme();
 
-    // ---- If page data is not ready yet ----
-    if (!page) {
-        if (isLoading) {
+    // ---- If page data is not ready yet or before client mount ----
+    if (!isMounted || !page) {
+        if (!isMounted || isLoading) {
             return (
                 <div className="w-full px-4 sm:px-8 py-8">
                     <Skeleton className="h-10 w-3/4 mb-6" />
@@ -451,13 +465,36 @@ export default function PageEditorPage() {
 
             {/* ---- AI Summary ---- */}
             {page!.summary && (
-                <div className="mb-8 p-4 rounded-xl glass-darker">
-                    <p className="text-[10px] font-bold text-purple-500 mb-2 flex items-center gap-1.5 uppercase tracking-widest">
-                        <Sparkles className="h-3 w-3" /> AI Insight
-                    </p>
-                    <p className="text-sm text-muted-foreground/90 leading-relaxed font-medium">
-                        {page.summary}
-                    </p>
+                <div className="mb-8 p-4 rounded-xl glass-darker transition-all">
+                    <div
+                        className="flex items-center justify-between cursor-pointer select-none"
+                        onClick={() => setIsSummaryExpanded((prev) => !prev)}
+                    >
+                        <p className="text-[10px] font-bold text-purple-500 flex items-center gap-1.5 uppercase tracking-widest">
+                            <Sparkles className="h-3 w-3" /> AI Insight
+                        </p>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsSummaryExpanded((prev) => !prev);
+                            }}
+                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-all"
+                            title={isSummaryExpanded ? "Collapse summary" : "Expand summary"}
+                            aria-label={isSummaryExpanded ? "Collapse summary" : "Expand summary"}
+                        >
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${
+                                    isSummaryExpanded ? "rotate-0" : "-rotate-90"
+                                }`}
+                            />
+                        </button>
+                    </div>
+                    {isSummaryExpanded && (
+                        <p className="text-sm text-muted-foreground/90 leading-relaxed font-medium mt-2 pt-1 animate-in fade-in-50 duration-200">
+                            {page.summary}
+                        </p>
+                    )}
                 </div>
             )}
 
@@ -471,7 +508,7 @@ export default function PageEditorPage() {
                     pageId={pageId}
                     initialContent={page?.content as unknown as Block[]}
                     onSave={handleEditorSave}
-                    onChange={(blocks) => { liveBlocksRef.current = blocks; }} // sync live ref
+                    onChange={handleEditorChange}
                     editable={true}
                 />
             </div>

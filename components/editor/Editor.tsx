@@ -9,7 +9,7 @@
 //   - Debounced background saving pipeline
 // ============================================================
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
     useCreateBlockNote,
     createReactBlockSpec,
@@ -403,6 +403,15 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             },
         });
 
+        // Keep latest callbacks in refs so timers and unmount effects never trigger re-render loops
+        const onSaveRef = useRef(onSave);
+        onSaveRef.current = onSave;
+
+        const onChangeRef = useRef(onChange);
+        onChangeRef.current = onChange;
+
+        const serverHydrated = useRef(false);
+
         // Reconcile server data when it arrives in the background
         useEffect(() => {
             if (!editor || !initialContent || initialContent.length === 0) return;
@@ -414,8 +423,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
                 } catch {}
             }
 
-            // If user hasn't started typing and current editor is empty, hydrate with server blocks
-            if (!hasUserEdited.current) {
+            // If user hasn't started typing and current editor is empty, hydrate with server blocks once
+            if (!serverHydrated.current && !hasUserEdited.current) {
                 const currentDoc = editor.document;
                 const isEmptyDoc =
                     currentDoc.length <= 1 &&
@@ -423,6 +432,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
                     (!currentDoc[0].content || (Array.isArray(currentDoc[0].content) && currentDoc[0].content.length === 0));
 
                 if (isEmptyDoc) {
+                    serverHydrated.current = true;
                     editor.replaceBlocks(editor.document, initialContent as unknown as Block[]);
                 }
             }
@@ -433,11 +443,16 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             if (!pageId || typeof window === "undefined") return;
 
             const ydoc = new Y.Doc();
-            const persistence = new IndexeddbPersistence(`cleft-page-${pageId}`, ydoc);
+            let persistence: IndexeddbPersistence | null = null;
+            try {
+                persistence = new IndexeddbPersistence(`cleft-page-${pageId}`, ydoc);
+            } catch {
+                // Ignore storage errors in restricted contexts
+            }
 
             // Clean up persistence on unmount
             return () => {
-                persistence.destroy();
+                persistence?.destroy();
                 ydoc.destroy();
             };
         }, [pageId]);
@@ -462,20 +477,20 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             },
         }));
 
-        // Cleanup timer on unmount and flush pending save
+        // Cleanup timer on unmount and flush pending save ONLY when editor unmounts
         useEffect(() => {
             return () => {
                 if (saveTimerRef.current) {
                     clearTimeout(saveTimerRef.current);
                     if (editor && hasUserEdited.current) {
-                        onSave(editor.document as Block[]);
+                        onSaveRef.current(editor.document as Block[]);
                     }
                 }
             };
-        }, [editor, onSave]);
+        }, [editor]);
 
-        // Handle every editor change
-        function handleChange() {
+        // Handle every editor change with stable callback
+        const handleChange = useCallback(() => {
             hasUserEdited.current = true;
             // 1. Get current blocks
             const blocks = editor.document as Block[];
@@ -488,7 +503,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             }
 
             // 3. Call immediate onChange if provided (0ms local reflection)
-            onChange?.(blocks);
+            onChangeRef.current?.(blocks);
 
             // 4. Debounced auto-save to background pipeline
             if (saveTimerRef.current) {
@@ -496,9 +511,9 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             }
 
             saveTimerRef.current = setTimeout(() => {
-                onSave(blocks);
+                onSaveRef.current(blocks);
             }, 1200);
-        }
+        }, [editor, pageId]);
 
         // Custom slash menu items
         const getCustomSlashMenuItems = (editorInstance: any) => [
