@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -19,6 +19,27 @@ import { Sidebar } from "@/components/sidebar/Sidebar";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);         // mobile sheet
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop toggle
+
+    // Pre-warm the heavy Editor bundle during idle time so page creation/loading is instant
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const prewarm = () => {
+            import("@/components/editor/Editor");
+        };
+
+        if ("requestIdleCallback" in window) {
+            const id = (window as Window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(prewarm);
+            return () => {
+                if ("cancelIdleCallback" in window) {
+                    (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
+                }
+            };
+        } else {
+            const timer = setTimeout(prewarm, 500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     const handleCloseSidebar = useCallback(() => {
         setSidebarOpen(false);

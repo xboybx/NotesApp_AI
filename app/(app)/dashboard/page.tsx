@@ -12,7 +12,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, FileText, Clock, Loader2Icon } from "lucide-react";
+import { Plus, FileText, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
@@ -34,6 +34,7 @@ export default function DashboardPage() {
     const pages = pagesData?.data || [];
     const [navigatingId, setNavigatingId] = useState<string | null>(null);
     const [isHydrated, setIsHydrated] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     function handlePrefetchPage(id: string) {
         router.prefetch(`/pages/${id}`);
@@ -53,15 +54,22 @@ export default function DashboardPage() {
         setIsHydrated(true);
     }, []);
 
+    const isBusy = isCreating || createPage.isPending;
+
     // Create a new page and open it immediately
     async function handleCreatePage() {
+        if (isBusy) return;
+        setIsCreating(true);
         try {
             const result = await createPage.mutateAsync({});
             if (result.data?._id) {
                 router.push(`/pages/${result.data._id}`);
+            } else {
+                setIsCreating(false);
             }
         } catch {
             toast.error("Failed to create page");
+            setIsCreating(false);
         }
     }
 
@@ -89,12 +97,23 @@ export default function DashboardPage() {
             {/* ---- Quick Create Button ---- */}
             <Button
                 onClick={handleCreatePage}
-                disabled={createPage.isPending}
+                onMouseEnter={() => import("@/components/editor/Editor")}
+                onFocus={() => import("@/components/editor/Editor")}
+                disabled={isBusy}
                 className="mb-8 gap-2"
                 size="lg"
             >
-                <Plus className="h-5 w-5" />
-                New Page
+                {isBusy ? (
+                    <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Creating page...
+                    </>
+                ) : (
+                    <>
+                        <Plus className="h-5 w-5" />
+                        New Page
+                    </>
+                )}
             </Button>
 
             {/* ---- Recent Pages Section ---- */}
@@ -133,7 +152,7 @@ export default function DashboardPage() {
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-2xl">
                                             {navigatingId === page._id ? (
-                                                <Loader2Icon className="h-5 w-5 animate-spin" />
+                                                <Loader2 className="h-5 w-5 animate-spin" />
                                             ) : (
                                                 page.icon || "📄"
                                             )}
@@ -160,9 +179,23 @@ export default function DashboardPage() {
                         <p className="text-muted-foreground mb-4">
                             Create your first page to get started
                         </p>
-                        <Button onClick={handleCreatePage} disabled={createPage.isPending}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Page
+                        <Button
+                            onClick={handleCreatePage}
+                            onMouseEnter={() => import("@/components/editor/Editor")}
+                            onFocus={() => import("@/components/editor/Editor")}
+                            disabled={isBusy}
+                        >
+                            {isBusy ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Creating page...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create Page
+                                </>
+                            )}
                         </Button>
                     </div>
                 )}

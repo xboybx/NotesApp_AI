@@ -31,6 +31,7 @@ export const metadata: Metadata = {
     title: "Cleft Notes",
     statusBarStyle: "default",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth.schema";
 
 // Better Auth client — sends requests to /api/auth/*
-import { signIn } from "@/lib/auth/auth-client";
+import { signIn, useSession } from "@/lib/auth/auth-client";
 
 // shadcn/ui components
 import { Button } from "@/components/ui/button";
@@ -42,33 +42,50 @@ import {
 
 export function LoginForm() {
     const router = useRouter();
+    const { data: session, isPending: isSessionPending } = useSession();
     const [isLoading, setIsLoading] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    useEffect(() => {
+        if (session?.user) {
+            router.push("/dashboard");
+        }
+    }, [session, router]);
+
     // React Hook Form setup:
-    // - register: connects an <input> to the form (tracks its value)
-    // - handleSubmit: wraps our submit function with validation
-    // - formState.errors: contains any validation errors from Zod
     const {
         register,
         handleSubmit,
         formState: { errors },
     } = useForm<LoginFormData>({
-        resolver: zodResolver(loginSchema), // tells RHF to use our Zod schema for validation
+        resolver: zodResolver(loginSchema),
         defaultValues: {
             email: "",
             password: "",
         },
     });
 
+    // Loading state before login while checking session or if already logged in
+    if (isSessionPending || session?.user) {
+        return (
+            <Card className="w-full max-w-md p-10 text-center flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="space-y-1">
+                    <p className="text-base font-semibold">
+                        {session?.user ? "Redirecting to workspace..." : "Checking credentials..."}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Please wait a moment</p>
+                </div>
+            </Card>
+        );
+    }
+
     // This runs ONLY if Zod validation passes (email format ok, password length ok)
     async function onSubmit(data: LoginFormData) {
         setIsLoading(true);
 
         try {
-            // signIn.email() → POST /api/auth/sign-in/email
-            // Better Auth checks the email+password against the DB,
-            // and if valid, sets the session cookie automatically.
             const result = await signIn.email({
                 email: data.email,
                 password: data.password,
@@ -76,16 +93,18 @@ export function LoginForm() {
 
             if (result.error) {
                 toast.error(result.error.message || "Login failed. Please try again.");
+                setIsLoading(false);
                 return;
             }
 
+            setIsRedirecting(true);
             toast.success("Welcome back!");
-            router.push("/dashboard"); // redirect to dashboard after login
-            router.refresh(); // refresh the page to pick up the new session
+            router.push("/dashboard");
+            router.refresh();
         } catch (error) {
             toast.error("Something went wrong. Please try again.");
-        } finally {
-            setIsLoading(false); // re-enable the button
+            setIsLoading(false);
+            setIsRedirecting(false);
         }
     }
 
@@ -149,8 +168,13 @@ export function LoginForm() {
                 </CardContent>
 
                 <CardFooter className="flex flex-col gap-4">
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? (
+                    <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+                        {isRedirecting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Redirecting to workspace...
+                            </>
+                        ) : isLoading ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Signing in...

@@ -89,7 +89,7 @@ export default function PageEditorPage() {
 
     // ---- Local state ----
     const [isMounted, setIsMounted] = useState(false);
-    const [title, setTitle] = useState("");
+    const [title, setTitle] = useState(() => pageData?.data?.title || "");
     const [aiPanel, setAIPanel] = useState<AIPanelState>({ type: null, result: null });
     const [isSavingTitle, setIsSavingTitle] = useState(false);
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -283,9 +283,9 @@ export default function PageEditorPage() {
 
     const { resolvedTheme } = useTheme();
 
-    // ---- If page data is not ready yet or before client mount ----
-    if (!isMounted || !page) {
-        if (!isMounted || isLoading) {
+    // ---- If page data is not ready yet ----
+    if (!page) {
+        if (isLoading) {
             return (
                 <div className="w-full px-4 sm:px-8 py-8">
                     <Skeleton className="h-10 w-3/4 mb-6" />

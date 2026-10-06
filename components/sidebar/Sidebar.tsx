@@ -16,14 +16,15 @@
 
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Plus,
-    Search,
     Home,
     Trash2,
     LogOut,
     ChevronsLeft,
+    Loader2,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -47,22 +48,30 @@ export function Sidebar({ onClose }: SidebarProps) {
     const { data: session } = useSession();
     const { data: pagesData, isLoading } = usePages();
     const createPage = useCreatePage();
+    const [isCreating, setIsCreating] = useState(false);
 
     // Split pages into favorites and regular pages
     const allPages = pagesData?.data || [];
     const favoritePages = allPages.filter((page) => page.isFavorite);
     const regularPages = allPages.filter((page) => !page.isFavorite);
 
+    const isBusy = isCreating || createPage.isPending;
+
     // Create a new blank page and navigate to it
     async function handleCreatePage() {
+        if (isBusy) return;
+        setIsCreating(true);
         try {
             const result = await createPage.mutateAsync({});
             if (result.data?._id) {
                 router.push(`/pages/${result.data._id}`);
                 onClose?.(); // close mobile sidebar
+            } else {
+                setIsCreating(false);
             }
         } catch {
             toast.error("Failed to create page");
+            setIsCreating(false);
         }
     }
 
@@ -127,10 +136,21 @@ export function Sidebar({ onClose }: SidebarProps) {
                     variant="ghost"
                     className="w-full justify-start gap-3 text-sm h-9 rounded-lg hover:bg-sidebar-accent transition-all hover:translate-x-1"
                     onClick={handleCreatePage}
-                    disabled={createPage.isPending}
+                    onMouseEnter={() => import("@/components/editor/Editor")}
+                    onFocus={() => import("@/components/editor/Editor")}
+                    disabled={isBusy}
                 >
-                    <Plus className="h-4 w-4 text-primary" />
-                    <span className="font-medium">New Page</span>
+                    {isBusy ? (
+                        <>
+                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                            <span className="font-medium">Creating page...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Plus className="h-4 w-4 text-primary" />
+                            <span className="font-medium">New Page</span>
+                        </>
+                    )}
                 </Button>
             </div>
 
