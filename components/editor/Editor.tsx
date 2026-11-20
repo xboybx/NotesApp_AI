@@ -150,7 +150,7 @@ function MathBlockComponent({ block, editor }: any) {
                     value={latex}
                     onChange={(e) => setLatex(e.target.value)}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                             handleSave();
                         }
                     }}
@@ -167,11 +167,10 @@ function MathBlockComponent({ block, editor }: any) {
                                 e.preventDefault();
                                 handleAlign("left");
                             }}
-                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
-                                alignment === "left"
-                                    ? "bg-primary text-primary-foreground font-semibold"
-                                    : "hover:bg-muted text-muted-foreground"
-                            }`}
+                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${alignment === "left"
+                                ? "bg-primary text-primary-foreground font-semibold"
+                                : "hover:bg-muted text-muted-foreground"
+                                }`}
                         >
                             Left
                         </button>
@@ -181,11 +180,10 @@ function MathBlockComponent({ block, editor }: any) {
                                 e.preventDefault();
                                 handleAlign("center");
                             }}
-                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
-                                alignment === "center"
-                                    ? "bg-primary text-primary-foreground font-semibold"
-                                    : "hover:bg-muted text-muted-foreground"
-                            }`}
+                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${alignment === "center"
+                                ? "bg-primary text-primary-foreground font-semibold"
+                                : "hover:bg-muted text-muted-foreground"
+                                }`}
                         >
                             Middle
                         </button>
@@ -195,11 +193,10 @@ function MathBlockComponent({ block, editor }: any) {
                                 e.preventDefault();
                                 handleAlign("right");
                             }}
-                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
-                                alignment === "right"
-                                    ? "bg-primary text-primary-foreground font-semibold"
-                                    : "hover:bg-muted text-muted-foreground"
-                            }`}
+                            className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${alignment === "right"
+                                ? "bg-primary text-primary-foreground font-semibold"
+                                : "hover:bg-muted text-muted-foreground"
+                                }`}
                         >
                             Right
                         </button>
@@ -420,7 +417,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             if (pageId && typeof window !== "undefined") {
                 try {
                     localStorage.setItem(`cleft_content_${pageId}`, JSON.stringify(initialContent));
-                } catch {}
+                } catch { }
             }
 
             // If user hasn't started typing and current editor is empty, hydrate with server blocks once
@@ -499,7 +496,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(
             if (pageId && typeof window !== "undefined") {
                 try {
                     localStorage.setItem(`cleft_content_${pageId}`, JSON.stringify(blocks));
-                } catch {}
+                } catch { }
             }
 
             // 3. Call immediate onChange if provided (0ms local reflection)

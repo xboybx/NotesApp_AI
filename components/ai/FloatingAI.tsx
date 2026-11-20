@@ -12,8 +12,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Sparkles, Send, X, Loader2 } from "lucide-react";
+import { Sparkles, Send, X, Loader2, Globe } from "lucide-react";
 import { useAIContent } from "@/hooks/useAI";
+import { isWebSearchQuery } from "@/lib/ai/search";
 import { toast } from "sonner";
 
 interface FloatingAIProps {
@@ -27,6 +28,7 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
     const [isOpen, setIsOpen] = useState(false);
     const [prompt, setPrompt] = useState("");
     const [mounted, setMounted] = useState(false);
+    const [isSearchingWeb, setIsSearchingWeb] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const generateContent = useAIContent();
 
@@ -42,8 +44,11 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
         }
     }, [isOpen]);
 
-    // Auto-adjust textarea height on input changes
+    // Only fallback to JS resizing if modern CSS field-sizing is not supported
     useEffect(() => {
+        if (typeof CSS !== "undefined" && CSS.supports("field-sizing", "content")) {
+            return; // Native CSS handles it with 0 JS overhead
+        }
         const textarea = textareaRef.current;
         if (textarea) {
             textarea.style.height = "auto";
@@ -65,13 +70,17 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
 
         if (!prompt.trim() || generateContent.isPending) return;
 
+        const willSearch = isWebSearchQuery(prompt.trim());
+        setIsSearchingWeb(willSearch);
+
         try {
-            console.log(`[FloatingAI] Sending prompt to AI: "${prompt}"`);
+            console.log(`[FloatingAI] Sending prompt to AI: "${prompt}" (Web search: ${willSearch})`);
             const res = await generateContent.mutateAsync({
                 pageId,
                 title,
                 content: getContent(),
-                prompt: prompt.trim()
+                prompt: prompt.trim(),
+                searchWeb: willSearch,
             });
 
             console.log(`[FloatingAI] Full API response received:`, res);
@@ -79,27 +88,34 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
             if (res.success && res.data?.result) {
                 const resultText = res.data.result as string;
                 console.log(`[FloatingAI] Received result length: ${resultText.length} characters`);
-                console.log(`[FloatingAI] Full AI response that will be pasted:\n`, resultText);
-
                 console.log(`[FloatingAI] Passing result to onGenerated...`);
                 onGenerated(resultText);
 
                 setPrompt("");
+                setIsSearchingWeb(false);
                 setIsOpen(false);
-                toast.success(`Content generated! (${resultText.length} chars)`);
+                
+                const searchedWeb = (res.data as { searchedWeb?: boolean })?.searchedWeb;
+                toast.success(
+                    searchedWeb
+                        ? "Content generated with live DuckDuckGo web search!"
+                        : `Content generated! (${resultText.length} chars)`
+                );
             } else {
                 console.error("[FloatingAI] API returned success but no result:", res);
                 toast.error("AI returned incomplete content");
+                setIsSearchingWeb(false);
             }
         } catch (err: unknown) {
             console.error("[FloatingAI] Generation error:", err);
             const msg = err instanceof Error ? err.message : "Failed to generate content";
             toast.error(msg);
+            setIsSearchingWeb(false);
         }
     };
 
     const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             handleGenerate();
         }
@@ -109,84 +125,111 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
 
     return createPortal(
         <>
-            {/* CSS Stylesheet for custom liquid blob animations */}
+            {/* Modern GPU-accelerated Bubble Bloom Animation (Compositor only, zero CPU layout cost) */}
             <style>{`
-                @keyframes float-blob-1 {
-                    0% { transform: translate(0, 0) scale(1); }
-                    33% { transform: translate(30px, -15px) scale(1.1); }
-                    66% { transform: translate(-20px, 10px) scale(0.9); }
-                    100% { transform: translate(0, 0) scale(1); }
+                @keyframes bubble-bloom {
+                    0% {
+                        transform: scale(0.12);
+                        opacity: 0;
+                    }
+                    75% {
+                        transform: scale(1.02);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
                 }
-                @keyframes float-blob-2 {
-                    0% { transform: translate(0, 0) scale(1.1); }
-                    50% { transform: translate(-25px, 15px) scale(0.95); }
-                    100% { transform: translate(0, 0) scale(1.1); }
-                }
-                @keyframes float-blob-3 {
-                    0% { transform: translate(0, 0) scale(0.9); }
-                    50% { transform: translate(20px, -20px) scale(1.05); }
-                    100% { transform: translate(0, 0) scale(0.9); }
+                .bubble-bloom-enter {
+                    transform-origin: bottom right;
+                    animation: bubble-bloom 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    will-change: transform, opacity;
                 }
             `}</style>
 
-            {/* Expanded Panel — Centered Bottom Bar */}
+            {/* Expanded Panel — Bubble expanding out from bottom-right circle */}
             {isOpen && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl z-[100] animate-slide-up">
+                <div className="fixed bottom-8 right-8 w-[calc(100vw-4rem)] max-w-xl z-[100] bubble-bloom-enter">
                     <div className="
-                        relative w-full rounded-[28px] overflow-hidden
-                        border border-white/20 dark:border-white/10
-                        shadow-[0_24px_50px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.2)]
-                        backdrop-blur-[30px] bg-white/25 dark:bg-white/10
-                        flex items-end px-4 py-3 gap-3
+                        relative w-full rounded-[28px]
+                        border border-black/15 dark:border-white/20
+                        shadow-2xl shadow-black/10 dark:shadow-black/50
+                        bg-white dark:bg-black
+                        text-black dark:text-white
+                        flex items-center px-4 py-2.5 gap-3
+                        transition-colors duration-200
                     ">
-                        {/* Glow Blobs behind the glass */}
-                        <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-purple-500/20 dark:bg-purple-400/10 blur-2xl pointer-events-none animate-[float-blob-1_10s_infinite_ease-in-out]" />
-                        <div className="absolute left-1/2 -bottom-12 w-44 h-40 rounded-full bg-blue-400/20 dark:bg-blue-400/10 blur-2xl pointer-events-none animate-[float-blob-2_12s_infinite_ease-in-out]" />
-                        <div className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-pink-400/15 dark:bg-pink-400/10 blur-2xl pointer-events-none animate-[float-blob-3_8s_infinite_ease-in-out]" />
-
-                        {/* Top shine */}
-                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
-
-                        {/* Sparkles Badge (No Background) */}
-                        <div className="relative z-10 hidden sm:flex items-center justify-center h-10 w-10 flex-shrink-0">
-                            <Sparkles className="h-5 w-5 text-black dark:text-white animate-pulse" />
+                        {/* First Icon — AI / Globe with Blinking Glow during search */}
+                        <div 
+                            className="relative z-10 flex items-center justify-center h-10 w-10 flex-shrink-0"
+                            title={isSearchingWeb || isWebSearchQuery(prompt.trim()) ? "Live Web Search Active" : "Ask AI"}
+                        >
+                            {isSearchingWeb ? (
+                                <Globe className="h-5 w-5 text-black dark:text-white animate-[pulse_1s_ease-in-out_infinite] drop-shadow-[0_0_8px_rgba(0,0,0,0.5)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.85)]" />
+                            ) : isWebSearchQuery(prompt.trim()) ? (
+                                <Globe className="h-5 w-5 text-black dark:text-white transition-all" />
+                            ) : (
+                                <Sparkles className="h-5 w-5 text-black dark:text-white transition-all" />
+                            )}
                         </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleGenerate} className="relative z-10 flex flex-1 items-end gap-3 w-full">
-                            <textarea
-                                ref={textareaRef}
-                                rows={1}
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                onKeyDown={handleTextareaKeyDown}
-                                placeholder="Ask AI to write anything..."
-                                className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/50 text-sm font-medium px-2 py-2 resize-none max-h-48 overflow-y-auto min-h-[40px] leading-relaxed"
-                                disabled={generateContent.isPending}
-                            />
+                        {/* Form: Horizontal-only alignment with 0 layout reflow */}
+                        <form onSubmit={handleGenerate} className="relative z-10 flex flex-1 items-center gap-3 w-full">
+                            {generateContent.isPending ? (
+                                <div className="flex-1 flex items-center py-2 min-h-[40px] text-sm animate-pulse text-black dark:text-white font-medium select-none">
+                                    {isSearchingWeb ? (
+                                        <span className="truncate">Searching the web...</span>
+                                    ) : (
+                                        <span className="truncate">Writing response...</span>
+                                    )}
+                                </div>
+                            ) : (
+                                <textarea
+                                    ref={textareaRef}
+                                    rows={1}
+                                    value={prompt}
+                                    onChange={(e) => setPrompt(e.target.value)}
+                                    onKeyDown={handleTextareaKeyDown}
+                                    placeholder="Ask AI to write anything..."
+                                    style={{ fieldSizing: "content" }}
+                                    className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-black dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-sm font-normal px-2 py-2 resize-none max-h-48 overflow-y-auto min-h-[40px] leading-relaxed"
+                                    disabled={generateContent.isPending}
+                                />
+                            )}
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2 flex-shrink-0 h-10">
+                            <div className="flex items-center gap-1.5 flex-shrink-0 h-10">
                                 <button
                                     type="button"
-                                    onClick={() => setIsOpen(false)}
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        setIsSearchingWeb(false);
+                                    }}
+                                    title="Close"
                                     className="h-9 w-9 rounded-full flex items-center justify-center
-                                            bg-muted/30 dark:bg-white/5 hover:bg-muted/50 dark:hover:bg-white/10
-                                            text-muted-foreground hover:text-foreground transition-all duration-200"
+                                            bg-transparent hover:bg-black/5 dark:hover:bg-white/10
+                                            text-zinc-400 hover:text-black dark:text-zinc-500 dark:hover:text-white transition-all duration-200"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={!prompt.trim() || generateContent.isPending}
-                                    className="h-9 w-9 rounded-full bg-transparent hover:bg-muted/30 dark:hover:bg-white/5 
-                                            text-black dark:text-white disabled:opacity-30 disabled:text-muted-foreground/50 disabled:cursor-not-allowed 
-                                            hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center flex-shrink-0"
+                                    title={prompt.trim() ? "Send to AI" : "Enter prompt first"}
+                                    className={`
+                                        h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200
+                                        ${
+                                            prompt.trim() && !generateContent.isPending
+                                                ? "hover:bg-black/10 dark:hover:bg-white/15 text-black dark:text-white hover:scale-105 active:scale-95 cursor-pointer"
+                                                : "text-zinc-300 dark:text-zinc-700 cursor-not-allowed opacity-50"
+                                        }
+                                    `}
                                 >
                                     {generateContent.isPending ? (
-                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin text-black dark:text-white" />
                                     ) : (
-                                        <Send className="h-5 w-5" />
+                                        <Send className="h-4 w-4 text-black dark:text-white" />
                                     )}
                                 </button>
                             </div>
@@ -195,30 +238,22 @@ export function FloatingAI({ pageId, title, getContent, onGenerated }: FloatingA
                 </div>
             )}
 
-            {/* Floating Toggle Button — Liquid Glass in Bottom-Right */}
+            {/* Floating Toggle Button — Pure Black & White in Bottom-Right */}
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
                     className="
                         fixed bottom-8 right-8 z-[100]
                         h-14 w-14 rounded-full
-                        bg-white/10 dark:bg-black/25
-                        backdrop-blur-[30px]
-                        border border-white/25 dark:border-white/15
-                        shadow-[0_4px_24px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.25)]
-                        hover:shadow-[0_8px_32px_rgba(139,92,246,0.25),inset_0_1px_0_rgba(255,255,255,0.35)]
+                        bg-white dark:bg-black
+                        border border-black/15 dark:border-white/20
+                        shadow-lg shadow-black/10 dark:shadow-black/50
                         hover:scale-110 active:scale-95
                         transition-all duration-300
-                        overflow-hidden group flex items-center justify-center
+                        flex items-center justify-center
                     "
                 >
-                    {/* Glow Blobs behind the glass */}
-                    <div className="absolute -left-2 -top-2 w-10 h-10 rounded-full bg-purple-500/30 dark:bg-purple-400/15 blur-md pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-                    <div className="absolute -right-2 -bottom-2 w-10 h-10 rounded-full bg-blue-400/30 dark:bg-blue-400/15 blur-md pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-
-                    {/* Top shine */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
-                    <Sparkles className="relative z-10 h-5 w-5 text-foreground group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                    <Sparkles className="h-5 w-5 text-black dark:text-white transition-transform duration-300 group-hover:rotate-12" />
                 </button>
             )}
         </>,

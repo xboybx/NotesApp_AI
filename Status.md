@@ -187,9 +187,101 @@ onSuccess: (_, variables) => {
 
 ---
 
-## 6. Verification & Build Health
+## 5. Modern Web Guidance & UI Performance Optimizations
 
-* **Type Safety**: `npx tsc --noEmit` — 0 errors.
-* **Next.js Production Compilation**: `npm run build` — 100% success with Turbopack.
-* **Environment**: Local Next.js 16 + Hono REST API + MongoDB + Yjs Local-First Layer.
+| Modern Web Pattern | Location | Previous Implementation | Modern Platform Replacement | Benefit |
+| :--- | :--- | :--- | :--- | :--- |
+| **Native CSS Auto-Sizing** | `components/ai/FloatingAI.tsx` | Imperative JS `textarea.scrollHeight` in `useEffect` | `field-sizing: content` with `CSS.supports` fallback guard | Zero JS overhead, eliminates synchronous DOM layout thrashing on every keystroke |
+| **IME Keyboard Safety** | `FloatingAI.tsx` & `Editor.tsx` | `if (e.key === "Enter")` | `if (e.key === "Enter" && !e.nativeEvent.isComposing)` | Prevents premature submission when typing international/CJK characters |
+| **Compositor-Only Bubble Animation** | `components/ai/FloatingAI.tsx` | Slide-up with heavy multi-layer `blur-3xl` glowing blobs | `transform: scale()` with `transform-origin: bottom right` (`will-change: transform, opacity`) | Zero CPU layout recalculations; eliminates heavy GPU rasterization filters |
+| **Theme-Aware Monochrome Design** | `components/ai/FloatingAI.tsx` | Hardcoded dark styles | Pure black & white (`bg-white dark:bg-black`, `text-black dark:text-white`) | Clean high-contrast theme synchronization |
+
+---
+
+## 6. Live Web Search & AI Generation Architecture
+
+This section documents the end-to-end implementation of real-time web search integration powered by DuckDuckGo, intent classification, and responsive UI status feedback.
+
+### End-to-End Execution Flow
+
+```
+[User Types in FloatingAI]
+       │
+       ▼ (1) Intent Detection (lib/ai/search.ts -> isWebSearchQuery)
+       ├─ Prompt has no recency/search cues ──► Standard Generation
+       └─ Prompt has recency/search keywords 
+              │
+              ▼ (2) UI Feedback (components/ai/FloatingAI.tsx)
+              - Left icon morphs from Sparkles to Globe with a glowing blink halo
+              - Input textarea switches to: "Searching the web..."
+              │
+              ▼ (3) API Call (hooks/useAI.ts -> useAIContent -> POST /api/ai/generate)
+              │
+              ▼ (4) DuckDuckGo Scraper (lib/ai/search.ts -> searchDuckDuckGo)
+              - Fetches DuckDuckGo HTML endpoint with custom user-agent
+              - Extracts top 5 clean titles, snippets, and URLs
+              │
+              ▼ (5) Prompt Synthesis (lib/ai/prompts.ts -> getGeneratePrompt)
+              - Injects live search results into the LLM system prompt
+              │
+              ▼ (6) LLM Execution (lib/ai/openai.ts -> Groq / OpenAI)
+              - Generates BlockNote-formatted Markdown text with latest verified data
+              │
+              ▼ (7) Hydration & User Notification
+              - Pastes synthesized content directly into the active editor
+              - Displays toast: "Content generated with live DuckDuckGo web search!"
+```
+
+---
+
+### Detailed Code Map: Files, Functions & Responsibilities
+
+#### 1. `lib/ai/search.ts` (Core Search Engine & Intent Detection)
+* **`isWebSearchQuery(prompt: string): boolean`**:
+  * **What it does**: Inspects prompt text using regex against search keywords (`search`, `look up`, `browse`) and temporal/recency triggers (`latest`, `today`, `recent`, `news`, `updates`, `current`, `trending`, `release date`, `2025`, `2026`, `price of`, `versus`).
+  * **Why it matters**: Zero-latency (0ms), deterministic intent classification. No extra LLM token cost.
+* **`searchDuckDuckGo(query: string, maxResults = 5): Promise<SearchResult[]>`**:
+  * **What it does**: Dispatches a native `fetch` request to `https://html.duckduckgo.com/html/`. Parses the resulting HTML using clean regex matching to extract the top snippets, titles, and links.
+  * **Why it matters**: 100% free, zero external npm package dependencies, zero API keys required, and operates purely within standard Node.js runtime.
+* **`cleanHtml(raw: string): string`**:
+  * **What it does**: Strips remaining HTML tags and decodes entities (`&quot;`, `&#x27;`, `&amp;`, `&lt;`, `&gt;`).
+
+#### 2. `lib/ai/prompts.ts` (Context & RAG Prompt Assembly)
+* **`getGeneratePrompt(userPrompt, title?, existingContent?, searchResults?)`**:
+  * **What it does**: Constructs the structured `messages` array for OpenAI / Groq.
+  * **When `searchResults` are present**: Injects a dedicated `REAL-TIME WEB SEARCH RESULTS` block into the system instructions, telling the model to ground its response in the live search snippets while formatting output cleanly in BlockNote-ready Markdown and LaTeX block math (`$$...$$`).
+
+#### 3. `lib/hono/routes/ai.routes.ts` (Backend REST Handler)
+* **`POST /api/ai/generate`**:
+  * **What it does**:
+    1. Validates the request body (`prompt`, `title`, `content`, `searchWeb`).
+    2. Runs `isWebSearchQuery(userPrompt)` to determine if live data is necessary.
+    3. Calls `searchDuckDuckGo(userPrompt, 5)` when search is required.
+    4. Invokes `openai.chat.completions.create` with the enriched prompt.
+    5. Returns `{ success: true, data: { result, searchedWeb: boolean } }`.
+
+#### 4. `hooks/useAI.ts` (Client Mutation Hook)
+* **`useAIContent()`**:
+  * **What it does**: Wraps `/api/ai/generate` inside a TanStack Query `useMutation` hook. Supports passing `searchWeb?: boolean` along with the note payload.
+
+#### 5. `components/ai/FloatingAI.tsx` (Client UI & Interaction Layer)
+* **`FloatingAI` Component**:
+  * **State**:
+    * `isOpen`: Toggles between the floating circle and the expanded bubble pill.
+    * `isSearchingWeb`: Boolean tracking whether active generation is currently fetching live web results.
+  * **Icon Morphing & Blinking Glow**:
+    * When `isSearchingWeb` is active: the left icon displays `<Globe />` with an animated pulse and glowing drop-shadow (`dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.85)]`).
+    * As the user types: automatically previews the `<Globe />` icon if recency keywords are typed.
+  * **Input State Transition**:
+    * While generation is pending: replaces the textarea with an animated text indicator (`Searching the web...` or `Writing response...`).
+  * **Bubble-Bloom Expansion**:
+    * Uses `.bubble-bloom-enter` with `transform-origin: bottom right` to expand out of the small circle with 0 CPU layout reflow.
+
+---
+
+## 7. Verification & Build Health
+
+* **Type Safety**: `npx tsc --noEmit` — **0 errors**.
+* **Modern Web Guidance**: `npx modern-web-guidance legacy-scan .` — **0 legacy findings**.
+* **Environment**: Local Next.js 16 + Hono REST API + MongoDB + Yjs Local-First Layer + Zero-dependency DuckDuckGo Live Search.
 

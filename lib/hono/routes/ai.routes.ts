@@ -20,6 +20,7 @@ import {
     getTagsPrompt,
     getGeneratePrompt,
 } from "@/lib/ai/prompts";
+import { isWebSearchQuery, searchDuckDuckGo } from "@/lib/ai/search";
 import connectDB from "@/lib/db/mongodb";
 import Page from "@/lib/db/page.model";
 
@@ -277,7 +278,7 @@ aiRoutes.post("/tags", async (c) => {
 });
 
 // ---------------------------------------------------------------
-// POST /ai/generate — Generate content from scratch/prompt
+// POST /ai/generate — Generate content from scratch/prompt (with auto DuckDuckGo web search)
 // ---------------------------------------------------------------
 aiRoutes.post("/generate", async (c) => {
     try {
@@ -285,28 +286,30 @@ aiRoutes.post("/generate", async (c) => {
         const userPrompt = typeof body.prompt === "string" ? body.prompt : "";
         const title = typeof body.title === "string" ? body.title : "";
         const content = typeof body.content === "string" ? body.content : "";
+        const forceSearch = typeof body.searchWeb === "boolean" ? body.searchWeb : undefined;
 
         if (!userPrompt.trim()) {
             return c.json({ success: false, error: "Prompt is required" }, 400);
         }
 
-        // console.log(`[AI Generate] Received prompt: "${userPrompt.substring(0, 150)}..."`);
-        // console.log(`[AI Generate] Current note content length: ${content.length} chars`);
+        // Detect if prompt needs real-time information via DuckDuckGo
+        const shouldSearch = forceSearch !== undefined ? forceSearch : isWebSearchQuery(userPrompt);
+        let searchResults: Array<{ title: string; snippet: string; url?: string }> = [];
+
+        if (shouldSearch) {
+            console.log(`[AI Generate] Real-time DuckDuckGo search triggered for: "${userPrompt}"`);
+            searchResults = await searchDuckDuckGo(userPrompt, 5);
+            console.log(`[AI Generate] DuckDuckGo retrieved ${searchResults.length} live snippets`);
+        }
 
         const response = await openai.chat.completions.create({
             model: aiModel,
-            messages: getGeneratePrompt(userPrompt, title, content),
+            messages: getGeneratePrompt(userPrompt, title, content, searchResults),
             max_tokens: 4096, // Increased from 1500 to 4096 to handle longer responses
             temperature: 0.7,
         });
 
-        // Log full AI response details - critical for debugging truncation
-        // console.log(`[AI Generate] finish_reason:`, response.choices[0]?.finish_reason);
-        // console.log(`[AI Generate] usage:`, response.usage);
         const generated = response.choices[0]?.message?.content?.trim() || "";
-        // console.log(`[AI Generate] Full generated content length: ${generated.length} chars`);
-        // console.log(`[AI Generate] Full generated content:\n`, generated); // Logs EVERYTHING the AI sends
-        // console.log(`[AI Generate] Raw response object:`, JSON.stringify(response, null, 2));
 
         if (!generated) {
             console.error("[AI Generate] AI returned an empty response!");
@@ -317,7 +320,13 @@ aiRoutes.post("/generate", async (c) => {
             console.warn(`[AI Generate] WARNING: Response was not fully completed! finish_reason: ${response.choices[0]?.finish_reason}`);
         }
 
-        return c.json({ success: true, data: { result: generated } });
+        return c.json({ 
+            success: true, 
+            data: { 
+                result: generated,
+                searchedWeb: searchResults.length > 0 
+            } 
+        });
     } catch (error: unknown) {
         console.error("AI Generate error:", error);
 

@@ -125,7 +125,7 @@ export function useGenerateTags() {
 }
 
 // ---------------------------------------------------------------
-// useAIContent() — Generate new content from a prompt
+// useAIContent() — Generate new content from a prompt (supports live web search)
 // ---------------------------------------------------------------
 export function useAIContent() {
     return useMutation({
@@ -134,6 +134,7 @@ export function useAIContent() {
             content: string;
             title?: string;
             prompt: string;
+            searchWeb?: boolean;
         }) => callAI("generate", data),
     });
 }

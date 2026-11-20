@@ -80,8 +80,13 @@ IMPORTANT RULES:
     ];
 }
 // ---- Generate Content ----
-// Generates new content from scratch or based on a prompt.
-export function getGeneratePrompt(userPrompt: string, title?: string, existingContent?: string) {
+// Generates new content from scratch or based on a prompt (with optional live web search results).
+export function getGeneratePrompt(
+    userPrompt: string,
+    title?: string,
+    existingContent?: string,
+    searchResults?: Array<{ title: string; snippet: string; url?: string }>
+) {
     let systemContent = `You are a creative and helpful writing assistant inside a note-taking app like Notion (which uses the BlockNote block-based editor). 
 Your job is to generate high-quality text based on the user's request. 
 Keep the following in mind:
@@ -92,6 +97,14 @@ Keep the following in mind:
 - If provided, use the note title and existing content to match the current style/context
 - Do NOT add introductory or concluding remarks like "Here is the content you requested"
 - Just return the generated text content directly.`;
+
+    if (searchResults && searchResults.length > 0) {
+        systemContent += `\n\nREAL-TIME WEB SEARCH RESULTS (Use these up-to-date facts to answer the user):\n`;
+        searchResults.forEach((r, idx) => {
+            systemContent += `[${idx + 1}] "${r.title}": ${r.snippet}\n`;
+        });
+        systemContent += `\nInstructions: Synthesize the above live web findings directly into the user's note. Maintain an up-to-date, accurate tone with the latest verified data.`;
+    }
 
     if (title || existingContent) {
         systemContent += `\n\nContext for this note:\n`;
